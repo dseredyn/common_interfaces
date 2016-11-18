@@ -330,9 +330,14 @@ private:
     std::string name_;
 };
 
+class ContainerOuter {
+public:
+    virtual bool isValid(const std::string& name) const = 0;
+    virtual void setValid(const std::string& name, bool valid) = 0;
+};
 
 template <typename rosC >
-class PortsContainerOuter : public PortInterface<rosC > {
+class PortsContainerOuter : public PortInterface<rosC >, public ContainerOuter {
 public:
 
     PortsContainerOuter()
@@ -391,7 +396,7 @@ public:
         return name_;
     }
 
-    bool isValid(const std::string& name) const {
+    virtual bool isValid(const std::string& name) const {
         for (int i = 0; i < ports_.size(); ++i) {
             if (ports_[i]->getName() == name) {
                 return ports_[i]->isValid();
@@ -400,7 +405,7 @@ public:
         return false;
     }
 
-    void setValid(const std::string& name, bool valid) {
+    virtual void setValid(const std::string& name, bool valid) {
         for (int i = 0; i < ports_.size(); ++i) {
             if (ports_[i]->getName() == name) {
                 ports_[i]->setValid(valid);
