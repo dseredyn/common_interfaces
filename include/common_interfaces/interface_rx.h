@@ -54,15 +54,17 @@ public:
         shm_name_("TODO"),
         buf_prev_(NULL),
         out_(*this),
-        event_port_(false)
+        event_port_(false),
+        always_update_peers_(false)
     {
         this->ports()->addPort("command_OUTPORT", port_command_out_);
 
         this->addOperation("pushBackPeerExecution", &InterfaceRx::pushBackPeerExecution, this, RTT::ClientThread)
             .doc("enable HW operation");
 
-        addProperty("channel_name", channel_name_);
+        addProperty("channel_name", param_channel_name_);
         addProperty("event_port", event_port_);
+        addProperty("always_update_peers", always_update_peers_);
     }
 
     bool pushBackPeerExecution(const std::string &peer_name) {
@@ -79,12 +81,15 @@ public:
     bool configureHook() {
         Logger::In in("InterfaceRx::configureHook");
 
-        if (channel_name_.empty()) {
-            Logger::log() << Logger::Error << "channel_name is empty" << Logger::endl;
+        if (param_channel_name_.empty()) {
+            Logger::log() << Logger::Error << "parameter channel_name is empty" << Logger::endl;
             return false;
         }
 
-        shm_name_ = channel_name_;
+        Logger::log() << Logger::Info << "parameter event_port is set to: " << (event_port_?"true":"false") << Logger::endl;
+        Logger::log() << Logger::Info << "parameter always_update_peers is set to: " << (always_update_peers_?"true":"false") << Logger::endl;
+
+        shm_name_ = param_channel_name_;
 
         bool create_channel = false;
 
@@ -212,9 +217,6 @@ public:
             buffer_valid = (shm_reader_buffer_get(re_, &pbuf) == 0);
         }
 
-        if (buffer_valid) {
-            buf = reinterpret_cast<typename InterfaceOutport::Container*>( pbuf );
-        }
     /*/
         Container *buf = reinterpret_cast<Container*>( reader_buffer_get(&re_) );
     //*/
@@ -225,11 +227,13 @@ public:
             receiving_data_ = false;
         }
         else {
+            buf = reinterpret_cast<typename InterfaceOutport::Container*>( pbuf );
             if (buf != buf_prev_) {
                 buf_prev_ = buf;
                 port_command_out_.write(*buf);
 
                 out_.convertFromROS(*buf);
+                out_.setValid(true);
                 out_.writePorts();
                 receiving_data_ = true;
             }
@@ -238,11 +242,13 @@ public:
             }
         }
 
-        for (std::list<TaskContext* >::iterator it = peers_.begin(); it != peers_.end(); ++it) {
-            if (!(*it)->update()) {
-                Logger::In in("InterfaceRx::updateHook");
-                Logger::log() << Logger::Error << (*it)->getName() << "->update() has failed" << Logger::endl;
-                error();
+        if (always_update_peers_ || buffer_valid) {
+            for (std::list<TaskContext* >::iterator it = peers_.begin(); it != peers_.end(); ++it) {
+                if (!(*it)->update()) {
+                    Logger::In in("InterfaceRx::updateHook");
+                    Logger::log() << Logger::Error << (*it)->getName() << "->update() has failed" << Logger::endl;
+                    error();
+                }
             }
         }
 
@@ -254,8 +260,9 @@ public:
 private:
 
     // properties
-    std::string channel_name_;
+    std::string param_channel_name_;
     bool event_port_;
+    bool always_update_peers_;
     
     std::string shm_name_;
 

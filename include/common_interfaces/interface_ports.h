@@ -67,12 +67,16 @@ class PortOperation { };
 template <typename innerT >
 class PortOperation<RTT::InputPort, innerT> {
 public:
-    PortOperation(RTT::TaskContext &tc, const std::string &port_name) {
-        tc.ports()->addPort(port_name + "_INPORT", port_);
+    PortOperation(RTT::TaskContext &tc, const std::string &port_name) :
+        port_(port_name + "_INPORT"),
+        valid_(false)
+    {
+        tc.ports()->addPort(port_);
     }
 
     bool readPorts(innerT &data) {
-        return valid_ = (port_.read(data) == RTT::NewData);
+        valid_ = (port_.read(data) == RTT::NewData);
+        return valid_;
     }
 
     void setDataSample(innerT &data) {
@@ -100,14 +104,19 @@ template <typename innerT >
 class PortOperation<RTT::OutputPort, innerT> {
 public:
     PortOperation(RTT::TaskContext &tc, const std::string &port_name) :
-        port_(port_name + "_OUTPORT", false)
+        port_(port_name + "_OUTPORT", false),
+        valid_(false)
     {
         tc.ports()->addPort(port_);
     }
 
     bool writePorts(innerT &data) {
-        port_.write(data);
-        return true;
+        if (valid_) {
+            port_.write(data);
+            valid_ = false;
+            return true;
+        }
+        return false;
     }
 
     void setDataSample(innerT &data) {
@@ -122,12 +131,13 @@ public:
         return port_.getName();
     }
 
-    bool isValid() const {
-        return true;
+    void setValid(bool valid) {
+        valid_ = valid;
     }
 
 protected:
     RTT::OutputPort<innerT > port_;
+    bool valid_;
 };
 
 class Block {
@@ -135,6 +145,7 @@ public:
     virtual void setName(const std::string& name) = 0;
     virtual const std::string& getName() const = 0;
     virtual bool isValid() const = 0;
+    virtual void setValid(bool valid) = 0;
 };
 
 template <typename rosC >
@@ -180,6 +191,10 @@ public:
         return po_.isValid();
     }
 
+    virtual void setValid(bool valid) {
+        // do nothing
+    }
+
     virtual void setName(const std::string& name) {
         po_.setName(name);
     }
@@ -217,7 +232,11 @@ public:
     }
 
     virtual bool isValid() const {
-        return po_.isValid();
+        return true;
+    }
+
+    virtual void setValid(bool valid) {
+        po_.setValid(valid);
     }
 
     virtual bool readPorts() {
@@ -249,16 +268,14 @@ class PortsContainer : public PortInterface<rosC > {
 public:
 
     PortsContainer(rosT rosC::*ptr) :
-        ptr_(ptr),
-        valid_(false)
+        ptr_(ptr)
     {}
 
     virtual bool readPorts() {
-        valid_ = true;
         for (int i = 0; i < ports_.size(); ++i) {
-            valid_ = ports_[i]->readPorts() && valid_;
+            ports_[i]->readPorts();
         }
-        return valid_;
+        return true;
     }
 
     virtual bool writePorts() {
@@ -286,7 +303,17 @@ public:
     }
 
     virtual bool isValid() const {
-        return valid_;
+        bool valid = true;
+        for (int i = 0; i < ports_.size(); ++i) {
+            valid = ports_[i]->isValid() && valid;
+        }
+        return valid;
+    }
+
+    virtual void setValid(bool valid) {
+        for (int i = 0; i < ports_.size(); ++i) {
+            ports_[i]->setValid(valid);
+        }
     }
 
     virtual void setName(const std::string& name) {
@@ -300,7 +327,6 @@ public:
 private:
     std::vector<boost::shared_ptr<PortInterface<rosT > > > ports_;
     rosT rosC::*ptr_;
-    bool valid_;
     std::string name_;
 };
 
@@ -309,16 +335,14 @@ template <typename rosC >
 class PortsContainerOuter : public PortInterface<rosC > {
 public:
 
-    PortsContainerOuter() :
-        valid_(false)
+    PortsContainerOuter()
     {}
 
     virtual bool readPorts() {
-        valid_ = true;
         for (int i = 0; i < ports_.size(); ++i) {
-            valid_ = ports_[i]->readPorts() && valid_;
+            ports_[i]->readPorts();
         }
-        return valid_;
+        return true;
     }
 
     virtual bool writePorts() {
@@ -346,7 +370,17 @@ public:
     }
 
     virtual bool isValid() const {
-        return valid_;
+        bool valid = true;
+        for (int i = 0; i < ports_.size(); ++i) {
+            valid = ports_[i]->isValid() && valid;
+        }
+        return valid;
+    }
+
+    virtual void setValid(bool valid) {
+        for (int i = 0; i < ports_.size(); ++i) {
+            ports_[i]->setValid(valid);
+        }
     }
 
     virtual void setName(const std::string& name) {
@@ -366,9 +400,16 @@ public:
         return false;
     }
 
+    void setValid(const std::string& name, bool valid) {
+        for (int i = 0; i < ports_.size(); ++i) {
+            if (ports_[i]->getName() == name) {
+                ports_[i]->setValid(valid);
+            }
+        }
+    }
+
 private:
     std::vector<boost::shared_ptr<PortInterface<rosC > > > ports_;
-    bool valid_;
     std::string name_;
 };
 
