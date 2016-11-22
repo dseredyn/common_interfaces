@@ -57,6 +57,7 @@ public:
         event_port_(false),
         always_update_peers_(false)
     {
+// TODO: change misleading port name
         this->ports()->addPort("command_OUTPORT", port_command_out_);
 
         this->addOperation("pushBackPeerExecution", &InterfaceRx::pushBackPeerExecution, this, RTT::ClientThread)
