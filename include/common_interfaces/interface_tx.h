@@ -51,6 +51,7 @@ public:
     explicit InterfaceTx(const std::string& name) :
         TaskContext(name, PreOperational),
         in_(*this),
+        buf_(NULL),
         shm_name_("TODO")
     {
         addProperty("channel_name", channel_name_);
@@ -121,6 +122,8 @@ public:
         Logger::In in("InterfaceTx::startHook");
         void *pbuf = NULL;
         if (shm_writer_buffer_get(wr_, &pbuf) < 0) {
+            Logger::In in("InterfaceTx::startHook");
+            Logger::log() << Logger::Error << "shm_writer_buffer_get" << Logger::endl;
             return false;
         }
 
@@ -139,7 +142,7 @@ public:
 
         if (test_prev == cmd_out_.test) {
             Logger::In in("InterfaceTx::updateHook");
-            Logger::log() << Logger::Warning << "executed updateHook twice for the same packet " << cmd_out_.test << Logger::endl;
+            Logger::log() << Logger::Error << "executed updateHook twice for the same packet " << cmd_out_.test << Logger::endl;
             error();
         }
         else {
