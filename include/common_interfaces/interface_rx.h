@@ -221,6 +221,26 @@ public:
         Container *buf = reinterpret_cast<Container*>( reader_buffer_get(&re_) );
     //*/
 
+        if ( buffer_valid
+            && ((buf = reinterpret_cast<typename InterfaceOutport::Container*>( pbuf )) != buf_prev_) )
+        {
+                // save the pointer of buffer
+                buf_prev_ = buf;
+
+                // write received data to aggregate RTT port
+                port_command_out_.write(*buf);
+
+                // write received data to individual RTT ports
+                out_.convertFromROS(*buf);
+                out_.writePorts();
+
+                receiving_data_ = true;
+        }
+        else {
+            receiving_data_ = false;
+        }
+
+/*
         if (!buffer_valid) {
     //        Logger::In in("InterfaceRx::updateHook");
     //        Logger::log() << Logger::Debug << "could not receive data (NULL buffer)" << Logger::endl;
@@ -233,7 +253,7 @@ public:
                 port_command_out_.write(*buf);
 
                 out_.convertFromROS(*buf);
-                out_.setValid(true);
+//                out_.setValid(true);
                 out_.writePorts();
                 receiving_data_ = true;
             }
@@ -241,7 +261,7 @@ public:
                 receiving_data_ = false;
             }
         }
-
+*/
         if (always_update_peers_ || buffer_valid) {
             for (std::list<TaskContext* >::iterator it = peers_.begin(); it != peers_.end(); ++it) {
                 if (!(*it)->update()) {

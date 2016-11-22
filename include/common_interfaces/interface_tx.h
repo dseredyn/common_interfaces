@@ -55,6 +55,11 @@ public:
         shm_name_("TODO")
     {
         addProperty("channel_name", channel_name_);
+        this->addOperation("getDiag", &InterfaceTx::getDiag, this, RTT::ClientThread);
+    }
+
+    std::string getDiag() {
+        return "";
     }
 
     bool configureHook() {
@@ -109,8 +114,6 @@ public:
             }
         }
 
-
-
         return true;
     }
 
@@ -145,9 +148,6 @@ public:
             Logger::log() << Logger::Error << "executed updateHook twice for the same packet " << cmd_out_.test << Logger::endl;
             error();
         }
-        else {
-            //Logger::log() << Logger::Info << Logger::endl;
-        }
 
         if (buf_ == NULL) {
             Logger::In in("InterfaceTx::updateHook");
@@ -157,7 +157,6 @@ public:
         else {
             *buf_ = cmd_out_;
             shm_writer_buffer_write(wr_);
-            //Logger::log() << Logger::Debug << "sending command" << Logger::endl;
         }
         void *pbuf = NULL;
         shm_writer_buffer_get(wr_, &pbuf);

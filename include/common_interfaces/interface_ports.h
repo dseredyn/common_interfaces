@@ -68,15 +68,13 @@ template <typename innerT >
 class PortOperation<RTT::InputPort, innerT> {
 public:
     PortOperation(RTT::TaskContext &tc, const std::string &port_name) :
-        port_(port_name + "_INPORT"),
-        valid_(false)
+        port_(port_name + "_INPORT")
     {
         tc.ports()->addPort(port_);
     }
 
     bool readPorts(innerT &data) {
-        valid_ = (port_.read(data) == RTT::NewData);
-        return valid_;
+        return port_.read(data) == RTT::NewData;
     }
 
     void setDataSample(innerT &data) {
@@ -91,32 +89,22 @@ public:
         return port_.getName();
     }
 
-    bool isValid() const {
-        return valid_;
-    }
-
 protected:
     RTT::InputPort<innerT > port_;
-    bool valid_;
 };
 
 template <typename innerT >
 class PortOperation<RTT::OutputPort, innerT> {
 public:
     PortOperation(RTT::TaskContext &tc, const std::string &port_name) :
-        port_(port_name + "_OUTPORT", false),
-        valid_(false)
+        port_(port_name + "_OUTPORT", false)
     {
         tc.ports()->addPort(port_);
     }
 
     bool writePorts(innerT &data) {
-        if (valid_) {
-            port_.write(data);
-            valid_ = false;
-            return true;
-        }
-        return false;
+        port_.write(data);
+        return true;
     }
 
     void setDataSample(innerT &data) {
@@ -131,25 +119,12 @@ public:
         return port_.getName();
     }
 
-    void setValid(bool valid) {
-        valid_ = valid;
-    }
-
 protected:
     RTT::OutputPort<innerT > port_;
-    bool valid_;
-};
-
-class Block {
-public:
-    virtual void setName(const std::string& name) = 0;
-    virtual const std::string& getName() const = 0;
-    virtual bool isValid() const = 0;
-    virtual void setValid(bool valid) = 0;
 };
 
 template <typename rosC >
-class PortInterface: public Block {
+class PortInterface {
 public:
     virtual void convertFromROS(const rosC &container) = 0;
     virtual void convertToROS(rosC &container) = 0;
@@ -185,14 +160,6 @@ public:
 
     virtual bool writePorts() {
         return false;
-    }
-
-    virtual bool isValid() const {
-        return po_.isValid();
-    }
-
-    virtual void setValid(bool valid) {
-        // do nothing
     }
 
     virtual void setName(const std::string& name) {
@@ -231,14 +198,6 @@ public:
         data_.convertToROS(container.*ptr_);
     }
 
-    virtual bool isValid() const {
-        return true;
-    }
-
-    virtual void setValid(bool valid) {
-        po_.setValid(valid);
-    }
-
     virtual bool readPorts() {
         return false;
     }
@@ -274,14 +233,16 @@ public:
 
     virtual bool readPorts() {
         for (int i = 0; i < ports_.size(); ++i) {
-            ports_[i].first->readPorts();
+            valid_vec_[i] = ports_[i].first->readPorts();
         }
         return true;
     }
 
     virtual bool writePorts() {
         for (int i = 0; i < ports_.size(); ++i) {
-            ports_[i].first->writePorts();
+            if (valid_vec_[i]) {
+                ports_[i].first->writePorts();
+            }
         }
         return true;
     }
@@ -290,10 +251,10 @@ public:
         for (int i = 0; i < ports_.size(); ++i) {
             ports_[i].first->convertFromROS(ros.*ptr_);
             if (ports_[i].second != NULL) {
-                ports_[i].first->setValid( ros.*ports_[i].second );
+                valid_vec_[i] = ros.*ports_[i].second;
             }
             else {
-                ports_[i].first->setValid( true );
+                valid_vec_[i] = true;
             }
         }
     }
@@ -302,58 +263,24 @@ public:
         for (int i = 0; i < ports_.size(); ++i) {
             ports_[i].first->convertToROS(ros.*ptr_);
             if (ports_[i].second != NULL) {
-                (ros.*ports_[i].second) = ports_[i].first->isValid();
-            }
-            else {
-                ports_[i].first->setValid( true );
+                (ros.*ports_[i].second) = valid_vec_[i];
             }
         }
     }
-/*
-    Block& addPort(boost::shared_ptr<PortInterface<rosT > > port) {
-        ports_.push_back(port);
-        return *port.get();
-    }
-*/
-    Block& addPort(PortInterfacePtr port, uint8_t rosC::*ptr = NULL) {
+
+    void addPort(PortInterfacePtr port, uint8_t rosC::*ptr = NULL) {
         ports_.push_back( std::make_pair(port, ptr) );
-        return *port.get();
-    }
-
-    virtual bool isValid() const {
-        bool valid = true;
-        for (int i = 0; i < ports_.size(); ++i) {
-            valid = ports_[i].first->isValid() && valid;
-        }
-        return valid;
-    }
-
-    virtual void setValid(bool valid) {
-        for (int i = 0; i < ports_.size(); ++i) {
-            ports_[i].first->setValid(valid);
-        }
-    }
-
-    virtual void setName(const std::string& name) {
-        name_ = name;
-    }
-
-    virtual const std::string& getName() const {
-        return name_;
+        valid_vec_.push_back(false);
     }
 
 private:
-//    std::vector<boost::shared_ptr<PortInterface<rosT > > > ports_;
     std::vector<std::pair<PortInterfacePtr, uint8_t rosC::*>  > ports_;
-
+    std::vector<bool > valid_vec_;
     rosT rosC::*ptr_;
-    std::string name_;
 };
 
 class ContainerOuter {
 public:
-    virtual bool isValid(const std::string& name) const = 0;
-    virtual void setValid(const std::string& name, bool valid) = 0;
 };
 
 template <typename rosC >
@@ -366,14 +293,16 @@ public:
 
     virtual bool readPorts() {
         for (int i = 0; i < ports_.size(); ++i) {
-            ports_[i].first->readPorts();
+            valid_vec_[i] = ports_[i].first->readPorts();
         }
         return true;
     }
 
     virtual bool writePorts() {
         for (int i = 0; i < ports_.size(); ++i) {
-            ports_[i].first->writePorts();
+            if (valid_vec_[i]) {
+                ports_[i].first->writePorts();
+            }
         }
         return true;
     }
@@ -382,10 +311,10 @@ public:
         for (int i = 0; i < ports_.size(); ++i) {
             ports_[i].first->convertFromROS(ros);
             if (ports_[i].second != NULL) {
-                ports_[i].first->setValid( ros.*ports_[i].second );
+                valid_vec_[i] = ros.*ports_[i].second;
             }
             else {
-                ports_[i].first->setValid( true );
+                valid_vec_[i] = true;
             }
         }
     }
@@ -394,84 +323,19 @@ public:
         for (int i = 0; i < ports_.size(); ++i) {
             ports_[i].first->convertToROS(ros);
             if (ports_[i].second != NULL) {
-                (ros.*ports_[i].second) = ports_[i].first->isValid();
-            }
-            else {
-                ports_[i].first->setValid( true );
+                (ros.*ports_[i].second) = valid_vec_[i];
             }
         }
     }
-/*
-    Block& addPort(PortInterfacePtr port) {
-        ports_.push_back(port);
-        return *port.get();
-    }
-*/
-    Block& addPort(PortInterfacePtr port, uint8_t rosC::*ptr = NULL) {
+
+    void addPort(PortInterfacePtr port, uint8_t rosC::*ptr = NULL) {
         ports_.push_back( std::make_pair(port, ptr) );
-        return *port.get();
+        valid_vec_.push_back(false);
     }
-
-    virtual bool isValid() const {
-        bool valid = true;
-        for (int i = 0; i < ports_.size(); ++i) {
-            valid = ports_[i].first->isValid() && valid;
-        }
-        return valid;
-    }
-
-    virtual void setValid(bool valid) {
-        for (int i = 0; i < ports_.size(); ++i) {
-            ports_[i].first->setValid(valid);
-        }
-    }
-
-    virtual void setName(const std::string& name) {
-        name_ = name;
-    }
-
-    virtual const std::string& getName() const {
-        return name_;
-    }
-
-    virtual bool isValid(const std::string& name) const {
-        for (int i = 0; i < ports_.size(); ++i) {
-            if (ports_[i].first->getName() == name) {
-                return ports_[i].first->isValid();
-            }
-        }
-        return false;
-    }
-
-    virtual void setValid(const std::string& name, bool valid) {
-        for (int i = 0; i < ports_.size(); ++i) {
-            if (ports_[i].first->getName() == name) {
-                ports_[i].first->setValid(valid);
-            }
-        }
-    }
-/*
-    virtual size_t getBufferSize() const {
-        size_t size = 0;
-        for (int i = 0; i < ports_.size(); ++i) {
-            size += ports_[i]->getBufferSize();
-        }
-        return size;
-    }
-
-    virtual bool getSerializedData(uint8_t *buf) const {
-        int index = 0;
-        for (int i = 0; i < ports_.size(); ++i) {
-            index += ports_[i]->getSerializedData(&b[index]);
-        }
-        *(reinterpret_cast<rosC* >(&b[index])) = 
-        return true;
-    }
-*/
 
 private:
     std::vector<std::pair<PortInterfacePtr, uint8_t rosC::*>  > ports_;
-    std::string name_;
+    std::vector<bool > valid_vec_;
 };
 
 
