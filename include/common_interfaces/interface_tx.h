@@ -41,19 +41,18 @@
 
 using namespace RTT;
 
-template <template <template <typename Type> class RTTport> class Interface>
+template <class Container>
 class InterfaceTx: public RTT::TaskContext {
 public:
-    typedef Interface<RTT::InputPort > InterfaceInport;
-
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
     explicit InterfaceTx(const std::string& name) :
         TaskContext(name, PreOperational),
-        in_(*this),
         buf_(NULL),
         shm_name_("TODO")
     {
+        this->ports()->addPort("msg_INPORT", port_msg_in_);
+
         addProperty("channel_name", channel_name_);
         this->addOperation("getDiag", &InterfaceTx::getDiag, this, RTT::ClientThread);
     }
@@ -101,7 +100,7 @@ public:
         }
 
         if (create_channel) {
-            result = shm_create_channel(shm_name_.c_str(), sizeof(typename InterfaceInport::Container), 1, true);
+            result = shm_create_channel(shm_name_.c_str(), sizeof(Container), 1, true);
             if (result != 0) {
                 Logger::log() << Logger::Error << "create_shm_object: error: " << result << "   errno: " << errno << Logger::endl;
                 return false;
@@ -130,7 +129,7 @@ public:
             return false;
         }
 
-        buf_ = reinterpret_cast<typename InterfaceInport::Container*>(pbuf);
+        buf_ = reinterpret_cast<Container*>(pbuf);
         return true;
     }
 
@@ -140,27 +139,26 @@ public:
     void updateHook() {
         uint32_t test_prev = cmd_out_.test;
 
-        in_.readPorts();
-        in_.convertToROS(cmd_out_);
+        if (port_msg_in_.read(cmd_out_) == RTT::NewData) {
+            if (test_prev == cmd_out_.test) {
+                Logger::In in("InterfaceTx::updateHook");
+                Logger::log() << Logger::Error << "executed updateHook twice for the same packet " << cmd_out_.test << Logger::endl;
+                error();
+            }
 
-        if (test_prev == cmd_out_.test) {
-            Logger::In in("InterfaceTx::updateHook");
-            Logger::log() << Logger::Error << "executed updateHook twice for the same packet " << cmd_out_.test << Logger::endl;
-            error();
+            if (buf_ == NULL) {
+                Logger::In in("InterfaceTx::updateHook");
+                Logger::log() << Logger::Error << "writer get NULL buffer" << Logger::endl;
+                error();
+            }
+            else {
+                *buf_ = cmd_out_;
+                shm_writer_buffer_write(wr_);
+            }
+            void *pbuf = NULL;
+            shm_writer_buffer_get(wr_, &pbuf);
+            buf_ = reinterpret_cast<Container*>(pbuf);
         }
-
-        if (buf_ == NULL) {
-            Logger::In in("InterfaceTx::updateHook");
-            Logger::log() << Logger::Error << "writer get NULL buffer" << Logger::endl;
-            error();
-        }
-        else {
-            *buf_ = cmd_out_;
-            shm_writer_buffer_write(wr_);
-        }
-        void *pbuf = NULL;
-        shm_writer_buffer_get(wr_, &pbuf);
-        buf_ = reinterpret_cast<typename InterfaceInport::Container*>(pbuf);
     }
 
 
@@ -172,9 +170,10 @@ private:
     std::string shm_name_;
     shm_writer_t* wr_;
 
-    InterfaceInport in_;
-    typename InterfaceInport::Container cmd_out_;
-    typename InterfaceInport::Container* buf_;
+    RTT::InputPort<Container > port_msg_in_;
+
+    Container cmd_out_;
+    Container* buf_;
 };
 
 #endif  // INTERFACE_TX_H__

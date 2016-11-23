@@ -42,23 +42,19 @@
 
 using namespace RTT;
 
-template <template <template <typename Type> class RTTport> class Interface>
+template <class Container>
 class InterfaceRx: public RTT::TaskContext {
 public:
-    typedef Interface<RTT::OutputPort > InterfaceOutport;
-
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
     explicit InterfaceRx(const std::string& name) :
         TaskContext(name, PreOperational),
         shm_name_("TODO"),
         buf_prev_(NULL),
-        out_(*this),
         event_port_(false),
         always_update_peers_(false)
     {
-// TODO: change misleading port name
-        this->ports()->addPort("command_OUTPORT", port_command_out_);
+        this->ports()->addPort("msg_OUTPORT", port_msg_out_);
 
         this->addOperation("pushBackPeerExecution", &InterfaceRx::pushBackPeerExecution, this, RTT::ClientThread)
             .doc("enable HW operation");
@@ -121,7 +117,7 @@ public:
         }
 
         if (create_channel) {
-            result = shm_create_channel(shm_name_.c_str(), sizeof(typename InterfaceOutport::Container), 1, true);
+            result = shm_create_channel(shm_name_.c_str(), sizeof(Container), 1, true);
             if (result != 0) {
                 Logger::log() << Logger::Error << "create_shm_object: error: " << result << "   errno: " << errno << Logger::endl;
                 return false;
@@ -179,8 +175,6 @@ public:
 
     void cleanupHook() {
         shm_release_reader(re_);
-
-//        shm_remove_channel(shm_name_.c_str());
     }
 
     bool startHook() {
@@ -191,7 +185,7 @@ public:
             return false;
         }
 
-        buf_prev_ = reinterpret_cast<typename InterfaceOutport::Container*>( pbuf );
+        buf_prev_ = reinterpret_cast<Container*>( pbuf );
 
         receiving_data_ = false;
 
@@ -205,7 +199,7 @@ public:
     void updateHook() {
     //*
         void *pbuf = NULL;
-        typename InterfaceOutport::Container *buf = NULL;
+        Container *buf = NULL;
 
         bool buffer_valid = false;
         if (receiving_data_) {
@@ -223,17 +217,13 @@ public:
     //*/
 
         if ( buffer_valid
-            && ((buf = reinterpret_cast<typename InterfaceOutport::Container*>( pbuf )) != buf_prev_) )
+            && ((buf = reinterpret_cast<Container*>( pbuf )) != buf_prev_) )
         {
                 // save the pointer of buffer
                 buf_prev_ = buf;
 
-                // write received data to aggregate RTT port
-                port_command_out_.write(*buf);
-
-                // write received data to individual RTT ports
-                out_.convertFromROS(*buf);
-                out_.writePorts();
+                // write received data to RTT port
+                port_msg_out_.write(*buf);
 
                 receiving_data_ = true;
         }
@@ -248,10 +238,10 @@ public:
             receiving_data_ = false;
         }
         else {
-            buf = reinterpret_cast<typename InterfaceOutport::Container*>( pbuf );
+            buf = reinterpret_cast<Container*>( pbuf );
             if (buf != buf_prev_) {
                 buf_prev_ = buf;
-                port_command_out_.write(*buf);
+                port_msg_out_.write(*buf);
 
                 out_.convertFromROS(*buf);
 //                out_.setValid(true);
@@ -288,12 +278,10 @@ private:
     std::string shm_name_;
 
     shm_reader_t* re_;
-    typename InterfaceOutport::Container *buf_prev_;
+    Container *buf_prev_;
     bool receiving_data_;
 
-    InterfaceOutport out_;
-
-    RTT::OutputPort<typename InterfaceOutport::Container > port_command_out_;
+    RTT::OutputPort<Container > port_msg_out_;
 
     std::list<std::string > peer_list_;
     std::list<TaskContext* > peers_;
