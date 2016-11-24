@@ -45,8 +45,6 @@ using namespace RTT;
 template <class Container>
 class InterfaceRx: public RTT::TaskContext {
 public:
-    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-
     explicit InterfaceRx(const std::string& name) :
         TaskContext(name, PreOperational),
         shm_name_("TODO"),

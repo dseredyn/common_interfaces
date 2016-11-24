@@ -41,8 +41,6 @@ class MessageConcate: public RTT::TaskContext {
 public:
     typedef Interface<RTT::InputPort > InterfaceInport;
 
-    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-
     explicit MessageConcate(const std::string& name) :
         TaskContext(name, PreOperational),
         in_(*this),

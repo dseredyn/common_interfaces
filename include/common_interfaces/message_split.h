@@ -41,8 +41,6 @@ class MessageSplit: public RTT::TaskContext {
 public:
     typedef Interface<RTT::OutputPort > InterfaceOutport;
 
-    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-
     explicit MessageSplit(const std::string& name) :
         TaskContext(name, PreOperational),
         out_(*this),
