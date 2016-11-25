@@ -135,15 +135,7 @@ public:
     }
 
     void updateHook() {
-        uint32_t test_prev = cmd_out_.test;
-
         if (port_msg_in_.read(cmd_out_) == RTT::NewData) {
-            if (test_prev == cmd_out_.test) {
-                Logger::In in("InterfaceTx::updateHook");
-                Logger::log() << Logger::Error << "executed updateHook twice for the same packet " << cmd_out_.test << Logger::endl;
-                error();
-            }
-
             if (buf_ == NULL) {
                 Logger::In in("InterfaceTx::updateHook");
                 Logger::log() << Logger::Error << "writer get NULL buffer" << Logger::endl;
