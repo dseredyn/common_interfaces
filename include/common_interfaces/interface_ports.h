@@ -251,7 +251,7 @@ public:
         for (int i = 0; i < ports_.size(); ++i) {
             ports_[i].first->convertFromROS(ros.*ptr_);
             if (ports_[i].second != NULL) {
-                valid_vec_[i] = ros.*ports_[i].second;
+                valid_vec_[i] = ros.*ptr_.*ports_[i].second;
             }
             else {
                 valid_vec_[i] = true;
@@ -263,18 +263,18 @@ public:
         for (int i = 0; i < ports_.size(); ++i) {
             ports_[i].first->convertToROS(ros.*ptr_);
             if (ports_[i].second != NULL) {
-                (ros.*ports_[i].second) = valid_vec_[i];
+                (ros.*ptr_.*ports_[i].second) = valid_vec_[i];
             }
         }
     }
 
-    void addPort(PortInterfacePtr port, uint8_t rosC::*ptr = NULL) {
+    void addPort(PortInterfacePtr port, uint8_t rosT::*ptr = NULL) {
         ports_.push_back( std::make_pair(port, ptr) );
         valid_vec_.push_back(false);
     }
 
 private:
-    std::vector<std::pair<PortInterfacePtr, uint8_t rosC::*>  > ports_;
+    std::vector<std::pair<PortInterfacePtr, uint8_t rosT::*>  > ports_;
     std::vector<bool > valid_vec_;
     rosT rosC::*ptr_;
 };
