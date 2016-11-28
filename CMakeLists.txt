@@ -8,7 +8,19 @@ find_package(catkin REQUIRED COMPONENTS
   shm_comm
   )
 
-include_directories(${catkin_INCLUDE_DIRS})
+include_directories(${catkin_INCLUDE_DIRS} include)
+
+if(CATKIN_ENABLE_TESTING)
+    find_package(OROCOS-RTT REQUIRED COMPONENTS rtt-scripting rtt-transport-corba)
+    include(${OROCOS-RTT_USE_FILE_PATH}/UseOROCOS-RTT.cmake )
+
+    catkin_add_gtest(msg_concate_unittest tests/gtest_main.cc tests/msg_concate_unittest.cpp tests/test_ports.cpp)
+    target_link_libraries(msg_concate_unittest
+        ${catkin_LIBRARIES}
+        ${USE_OROCOS_LIBRARIES})
+#        ${OROCOS-RTT_LIBRARIES})
+
+endif(CATKIN_ENABLE_TESTING)
 
 catkin_package(
   INCLUDE_DIRS include

@@ -97,7 +97,7 @@ template <typename innerT >
 class PortOperation<RTT::OutputPort, innerT> {
 public:
     PortOperation(RTT::TaskContext &tc, const std::string &port_name) :
-        port_(port_name + "_OUTPORT", false)
+        port_(port_name + "_OUTPORT", true)
     {
         tc.ports()->addPort(port_);
     }
@@ -232,10 +232,14 @@ public:
     {}
 
     virtual bool readPorts() {
+        bool result = true;
         for (int i = 0; i < ports_.size(); ++i) {
             valid_vec_[i] = ports_[i].first->readPorts();
+            if (ports_[i].second == NULL && !valid_vec_[i]) {
+                result = false;
+            }
         }
-        return true;
+        return result;
     }
 
     virtual bool writePorts() {
@@ -260,11 +264,27 @@ public:
     }
 
     virtual void convertToROS(rosC &ros) {
+        bool invalid_data_handled = true;
         for (int i = 0; i < ports_.size(); ++i) {
-            ports_[i].first->convertToROS(ros.*ptr_);
+            if (valid_vec_[i]) {
+                ports_[i].first->convertToROS(ros.*ptr_);
+            }
+            else {
+                ros.*ptr_ = rosT();
+            }
+
             if (ports_[i].second != NULL) {
+                // the information about invalid data is written to msg field
                 (ros.*ptr_.*ports_[i].second) = valid_vec_[i];
             }
+            else if (!valid_vec_[i]) {
+                // there is no data_valid field in msg
+                // and the data is invalid, so invalidate whole container
+                invalid_data_handled = false;
+            }
+        }
+        if (!invalid_data_handled) {
+            ros = rosC();
         }
     }
 
@@ -292,10 +312,14 @@ public:
     {}
 
     virtual bool readPorts() {
+        bool result = true;
         for (int i = 0; i < ports_.size(); ++i) {
             valid_vec_[i] = ports_[i].first->readPorts();
+            if (ports_[i].second == NULL && !valid_vec_[i]) {
+                result = false;
+            }
         }
-        return true;
+        return result;
     }
 
     virtual bool writePorts() {
@@ -320,11 +344,21 @@ public:
     }
 
     virtual void convertToROS(rosC &ros) {
+        bool invalid_data_handled = true;
         for (int i = 0; i < ports_.size(); ++i) {
             ports_[i].first->convertToROS(ros);
             if (ports_[i].second != NULL) {
+                // the information about invalid data is written to msg field
                 (ros.*ports_[i].second) = valid_vec_[i];
             }
+            else if (!valid_vec_[i]) {
+                // there is no data_valid field in msg
+                // and the data is invalid, so invalidate whole container
+                invalid_data_handled = false;
+            }
+        }
+        if (!invalid_data_handled) {
+            ros = rosC();
         }
     }
 
