@@ -27,21 +27,22 @@
 
 #include <limits.h>
 #include "test_ports.h"
-#include "common_interfaces/message_concate.h"
+#include "common_interfaces/message_split.h"
 #include <rtt/extras/SlaveActivity.hpp>
 
 #include "gtest/gtest.h"
 
-namespace message_concate_tests {
+namespace message_split_tests {
 
 using namespace common_interfaces_test_interface;
 
-class TestComponentIn : public RTT::TaskContext {
+class TestComponentOut : public RTT::TaskContext {
 
 public:
 
-    explicit TestComponentIn(const std::string& name) :
-        TaskContext(name, PreOperational)
+    explicit TestComponentOut(const std::string& name) :
+        TaskContext(name, PreOperational),
+        cont_()
     {
         this->ports()->addPort("cont1_sub1_field1", port1);
         this->ports()->addPort("cont1_sub1_field2", port2);
@@ -70,22 +71,24 @@ public:
     }
 
     void updateHook() {
-        port1.write(cont_.cont1.sub1.field1);
-        port2.write(cont_.cont1.sub1.field2);
-        port3.write(cont_.cont1.sub2.field1);
-        port4.write(cont_.cont1.sub2.field2);
-        port5.write(cont_.cont1.field1);
-        port6.write(cont_.cont1.field2);
-        port7.write(cont_.cont2.sub1.field1);
-        port8.write(cont_.cont2.sub1.field2);
-        port9.write(cont_.cont2.sub2.field1);
-        port10.write(cont_.cont2.sub2.field2);
-        port11.write(cont_.cont2.field1);
-        port12.write(cont_.cont2.field2);
-        port13.write(cont_.cont3);
-        port14.write(cont_.cont4);
-        port15.write(cont_.field1);
-        port16.write(cont_.field2);
+        std::cout << "cont_.cont1.sub1.field2: " << cont_.cont1.sub1.field2 << std::endl;
+        status_[port1.getName()] = port1.read(cont_.cont1.sub1.field1);
+        status_[port2.getName()] = port2.read(cont_.cont1.sub1.field2);
+        status_[port3.getName()] = port3.read(cont_.cont1.sub2.field1);
+        status_[port4.getName()] = port4.read(cont_.cont1.sub2.field2);
+        status_[port5.getName()] = port5.read(cont_.cont1.field1);
+        status_[port6.getName()] = port6.read(cont_.cont1.field2);
+        status_[port7.getName()] = port7.read(cont_.cont2.sub1.field1);
+        status_[port8.getName()] = port8.read(cont_.cont2.sub1.field2);
+        status_[port9.getName()] = port9.read(cont_.cont2.sub2.field1);
+        status_[port10.getName()] = port10.read(cont_.cont2.sub2.field2);
+        status_[port11.getName()] = port11.read(cont_.cont2.field1);
+        status_[port12.getName()] = port12.read(cont_.cont2.field2);
+        status_[port13.getName()] = port13.read(cont_.cont3);
+        status_[port14.getName()] = port14.read(cont_.cont4);
+        status_[port15.getName()] = port15.read(cont_.field1);
+        status_[port16.getName()] = port16.read(cont_.field2);
+        std::cout << "cont_.cont1.sub1.field2: " << cont_.cont1.sub1.field2 << "  status: " << status_[port2.getName()] << std::endl;
     }
 
     bool connectPorts(RTT::TaskContext* other, const std::vector<std::string >& not_connected_ports = std::vector<std::string >()) {
@@ -93,50 +96,60 @@ public:
         for (int i = 0; i < ports.size(); ++i) {
             bool ignore = false;
             for (int j = 0; j < not_connected_ports.size(); ++j) {
-                if (ports[i]->getName() == not_connected_ports[j] || ports[i]->getName() + "_INPORT" == not_connected_ports[j]) {
+                if (ports[i]->getName() == not_connected_ports[j] || ports[i]->getName() + "_OUTPORT" == not_connected_ports[j]) {
                     ignore = true;
                 }
             }
             if (ignore) {
                 continue;
             }
-            if (!ports[i]->connectTo( other->ports()->getPort(ports[i]->getName() + "_INPORT") )) {
+            if (!ports[i]->connectTo( other->ports()->getPort(ports[i]->getName() + "_OUTPORT") )) {
                 return false;
             }
         }
         return true;
     }
 
-    void setData(const Container& cont) {
-        cont_ = cont;
+    Container getData() const {
+        return cont_;
+    }
+
+    RTT::FlowStatus getStatus(const std::string& port_name) {
+        return status_[port_name];
+    }
+
+    const std::map<std::string, RTT::FlowStatus >& getStatus() const {
+        return status_;
     }
 
 private:
     Container cont_;
 
-    RTT::OutputPort<uint32_t > port1;
-    RTT::OutputPort<uint32_t > port2;
-    RTT::OutputPort<uint32_t > port3;
-    RTT::OutputPort<uint32_t > port4;
-    RTT::OutputPort<double > port5;
-    RTT::OutputPort<double > port6;
-    RTT::OutputPort<uint32_t > port7;
-    RTT::OutputPort<uint32_t > port8;
-    RTT::OutputPort<uint32_t > port9;
-    RTT::OutputPort<uint32_t > port10;
-    RTT::OutputPort<double > port11;
-    RTT::OutputPort<double > port12;
-    RTT::OutputPort<SubContainer > port13;
-    RTT::OutputPort<SubContainer > port14;
-    RTT::OutputPort<uint32_t > port15;
-    RTT::OutputPort<uint32_t > port16;
+    RTT::InputPort<uint32_t > port1;
+    RTT::InputPort<uint32_t > port2;
+    RTT::InputPort<uint32_t > port3;
+    RTT::InputPort<uint32_t > port4;
+    RTT::InputPort<double > port5;
+    RTT::InputPort<double > port6;
+    RTT::InputPort<uint32_t > port7;
+    RTT::InputPort<uint32_t > port8;
+    RTT::InputPort<uint32_t > port9;
+    RTT::InputPort<uint32_t > port10;
+    RTT::InputPort<double > port11;
+    RTT::InputPort<double > port12;
+    RTT::InputPort<SubContainer > port13;
+    RTT::InputPort<SubContainer > port14;
+    RTT::InputPort<uint32_t > port15;
+    RTT::InputPort<uint32_t > port16;
+
+    std::map<std::string, RTT::FlowStatus > status_;
 };
 
-class TestComponentOut : public RTT::TaskContext {
+class TestComponentIn : public RTT::TaskContext {
 
 public:
 
-    explicit TestComponentOut(const std::string& name) :
+    explicit TestComponentIn(const std::string& name) :
         TaskContext(name, PreOperational)
     {
         this->ports()->addPort("msg", port);
@@ -151,80 +164,99 @@ public:
     }
 
     void updateHook() {
-        port.read(cont_);
+        port.write(cont_);
     }
 
     bool connectPorts(RTT::TaskContext* other) {
-        if (!port.connectTo( other->ports()->getPort("msg_OUTPORT") )) {
+        if (!port.connectTo( other->ports()->getPort("msg_INPORT") )) {
             return false;
         }
         return true;
     }
 
-    Container getData() {
-        return cont_;
+    void setData(const Container& cont) {
+        cont_ = cont;
     }
+
 
 private:
     Container cont_;
 
-    RTT::InputPort<Container > port;
+    RTT::OutputPort<Container > port;
 };
 
 void initContainerData(Container& cont_in) {
   cont_in.cont1.sub1.field1 = 1;
+  cont_in.cont1.sub1.field1_valid = true;
   cont_in.cont1.sub1.field2 = 2;
+  cont_in.cont1.sub1_valid = true;
   cont_in.cont1.sub2.field1 = 3;
+  cont_in.cont1.sub2.field1_valid = true;
   cont_in.cont1.sub2.field2 = 4;
   cont_in.cont1.field1 = 5.0;
+  cont_in.cont1.field1_valid = true;
   cont_in.cont1.field2 = 6.0;
+  cont_in.cont1_valid = true;
   cont_in.cont2.sub1.field1 = 7;
+  cont_in.cont2.sub1.field1_valid = true;
   cont_in.cont2.sub1.field2 = 8;
+  cont_in.cont2.sub1_valid = true;
   cont_in.cont2.sub2.field1 = 9;
+  cont_in.cont2.sub2.field1_valid = true;
   cont_in.cont2.sub2.field2 = 10;
   cont_in.cont2.field1 = 11.0;
+  cont_in.cont2.field1_valid = true;
   cont_in.cont2.field2 = 12.0;
   cont_in.cont3.sub1.field1 = 13;
+  cont_in.cont3.sub1.field1_valid = true;
   cont_in.cont3.sub1.field2 = 14;
+  cont_in.cont3.sub1_valid = true;
+  cont_in.cont3.sub2.field1_valid = true;
   cont_in.cont3.sub2.field1 = 15;
   cont_in.cont3.sub2.field2 = 16;
   cont_in.cont3.field1 = 17.0;
+  cont_in.cont3.field1_valid = true;
   cont_in.cont3.field2 = 18.0;
+  cont_in.cont3_valid = true;
   cont_in.cont4.sub1.field1 = 19;
+  cont_in.cont4.sub1.field1_valid = true;
   cont_in.cont4.sub1.field2 = 21;
   cont_in.cont4.sub1_valid = true;
   cont_in.cont4.sub2.field1 = 22;
+  cont_in.cont4.sub2.field1_valid = true;
   cont_in.cont4.sub2.field2 = 23;
   cont_in.cont4.field1 = 24.0;
+  cont_in.cont4.field1_valid = true;
   cont_in.cont4.field2 = 25.0;
   cont_in.field1 = 26;
+  cont_in.field1_valid = true;
   cont_in.field2 = 27;
 }
 
 
-// Tests for class MessageConcate.
+// Tests for class MessageSplit.
 
-// Tests MessageConcate class for data valid on all input ports.
-TEST(MessageConcateTest, AllValid) {
+// Tests MessageSplit class for data valid on all input ports.
+TEST(MessageSplitTest, AllValid) {
 
   // the component under test
-  MessageConcate<Container_Ports > concate("concate");
-  concate.setActivity( new RTT::extras::SlaveActivity() );
-  EXPECT_TRUE( concate.configure() );
-  EXPECT_TRUE( concate.start() );
-  EXPECT_EQ( concate.ports()->getPortNames().size(), 17);
+  MessageSplit<Container_Ports > split("split");
+  split.setActivity( new RTT::extras::SlaveActivity() );
+  EXPECT_TRUE( split.configure() );
+  EXPECT_TRUE( split.start() );
+  EXPECT_EQ( split.ports()->getPortNames().size(), 17);
 
   // component that writes data on input ports of the component under test
   TestComponentIn test_in("test_in");
   test_in.setActivity( new RTT::extras::SlaveActivity() );
-  EXPECT_TRUE( test_in.connectPorts(&concate) );
+  EXPECT_TRUE( test_in.connectPorts(&split) );
   EXPECT_TRUE( test_in.configure() );
   EXPECT_TRUE( test_in.start() );
 
   // component that reads data from output port of the component under test
   TestComponentOut test_out("test_out");
   test_out.setActivity( new RTT::extras::SlaveActivity() );
-  EXPECT_TRUE( test_out.connectPorts(&concate) );
+  EXPECT_TRUE( test_out.connectPorts(&split) );
   EXPECT_TRUE( test_out.configure() );
   EXPECT_TRUE( test_out.start() );
 
@@ -237,61 +269,61 @@ TEST(MessageConcateTest, AllValid) {
 
   // execute all components
   test_in.getActivity()->execute();
-  concate.getActivity()->execute();
+  split.getActivity()->execute();
   test_out.getActivity()->execute();
 
   // get the result data
   Container cont_out = test_out.getData();
+
+  // check data flow status
+  EXPECT_EQ(test_out.getStatus("cont1_sub1_field1"), RTT::NewData);
+  EXPECT_EQ(test_out.getStatus("cont1_sub1_field2"), RTT::NewData);
+  EXPECT_EQ(test_out.getStatus("cont1_sub2_field1"), RTT::NewData);
+  EXPECT_EQ(test_out.getStatus("cont1_sub2_field2"), RTT::NewData);
+  EXPECT_EQ(test_out.getStatus("cont1_field1"), RTT::NewData);
+  EXPECT_EQ(test_out.getStatus("cont1_field2"), RTT::NewData);
+  EXPECT_EQ(test_out.getStatus("cont2_sub1_field1"), RTT::NewData);
+  EXPECT_EQ(test_out.getStatus("cont2_sub1_field2"), RTT::NewData);
+  EXPECT_EQ(test_out.getStatus("cont2_sub2_field1"), RTT::NewData);
+  EXPECT_EQ(test_out.getStatus("cont2_sub2_field2"), RTT::NewData);
+  EXPECT_EQ(test_out.getStatus("cont2_field1"), RTT::NewData);
+  EXPECT_EQ(test_out.getStatus("cont2_field2"), RTT::NewData);
+  EXPECT_EQ(test_out.getStatus("cont3"), RTT::NewData);
+  EXPECT_EQ(test_out.getStatus("cont4"), RTT::NewData);
+  EXPECT_EQ(test_out.getStatus("field1"), RTT::NewData);
+  EXPECT_EQ(test_out.getStatus("field2"), RTT::NewData);
+
 
   // check the data
   EXPECT_EQ(cont_out.cont1.sub1.field1,         cont_in.cont1.sub1.field1);
-  EXPECT_EQ(cont_out.cont1.sub1.field1_valid,   true);
   EXPECT_EQ(cont_out.cont1.sub1.field2,         cont_in.cont1.sub1.field2);
-  EXPECT_EQ(cont_out.cont1.sub1_valid,          true);
   EXPECT_EQ(cont_out.cont1.sub2.field1,         cont_in.cont1.sub2.field1);
-  EXPECT_EQ(cont_out.cont1.sub2.field1_valid,   true);
   EXPECT_EQ(cont_out.cont1.sub2.field2,         cont_in.cont1.sub2.field2);
   EXPECT_EQ(cont_out.cont1.field1,              cont_in.cont1.field1);
-  EXPECT_EQ(cont_out.cont1.field1_valid,        true);
   EXPECT_EQ(cont_out.cont1.field2,              cont_in.cont1.field2);
-  EXPECT_EQ(cont_out.cont1_valid,               true);
 
   EXPECT_EQ(cont_out.cont2.sub1.field1,         cont_in.cont2.sub1.field1);
-  EXPECT_EQ(cont_out.cont2.sub1.field1_valid,   true);
   EXPECT_EQ(cont_out.cont2.sub1.field2,         cont_in.cont2.sub1.field2);
-  EXPECT_EQ(cont_out.cont2.sub1_valid,          true);
   EXPECT_EQ(cont_out.cont2.sub2.field1,         cont_in.cont2.sub2.field1);
-  EXPECT_EQ(cont_out.cont2.sub2.field1_valid,   true);
   EXPECT_EQ(cont_out.cont2.sub2.field2,         cont_in.cont2.sub2.field2);
   EXPECT_EQ(cont_out.cont2.field1,              cont_in.cont2.field1);
-  EXPECT_EQ(cont_out.cont2.field1_valid,        true);
   EXPECT_EQ(cont_out.cont2.field2,              cont_in.cont2.field2);
 
   EXPECT_EQ(cont_out.cont3.sub1.field1,         cont_in.cont3.sub1.field1);
-  EXPECT_EQ(cont_out.cont3.sub1.field1_valid,   false);                     // this field is set manually
   EXPECT_EQ(cont_out.cont3.sub1.field2,         cont_in.cont3.sub1.field2);
-  EXPECT_EQ(cont_out.cont3.sub1_valid,          false);                     // this field is set manually
   EXPECT_EQ(cont_out.cont3.sub2.field1,         cont_in.cont3.sub2.field1);
-  EXPECT_EQ(cont_out.cont3.sub2.field1_valid,   false);                     // this field is set manually
   EXPECT_EQ(cont_out.cont3.sub2.field2,         cont_in.cont3.sub2.field2);
   EXPECT_EQ(cont_out.cont3.field1,              cont_in.cont3.field1);
-  EXPECT_EQ(cont_out.cont3.field1_valid,        false);                     // this field is set manually
   EXPECT_EQ(cont_out.cont3.field2,              cont_in.cont3.field2);
-  EXPECT_EQ(cont_out.cont3_valid,               true);
 
   EXPECT_EQ(cont_out.cont4.sub1.field1,         cont_in.cont4.sub1.field1);
-  EXPECT_EQ(cont_out.cont4.sub1.field1_valid,   false);                     // this field is set manually
   EXPECT_EQ(cont_out.cont4.sub1.field2,         cont_in.cont4.sub1.field2);
-  EXPECT_EQ(cont_out.cont4.sub1_valid,          true);                      // this field is set manually
   EXPECT_EQ(cont_out.cont4.sub2.field1,         cont_in.cont4.sub2.field1);
-  EXPECT_EQ(cont_out.cont4.sub2.field1_valid,   false);                     // this field is set manually
   EXPECT_EQ(cont_out.cont4.sub2.field2,         cont_in.cont4.sub2.field2);
   EXPECT_EQ(cont_out.cont4.field1,              cont_in.cont4.field1);
-  EXPECT_EQ(cont_out.cont4.field1_valid,        false);                     // this field is set manually
   EXPECT_EQ(cont_out.cont4.field2,              cont_in.cont4.field2);
 
   EXPECT_EQ(cont_out.field1,                    cont_in.field1);
-  EXPECT_EQ(cont_out.field1_valid,              true);
 
   EXPECT_EQ(cont_out.field2,                    cont_in.field2);
 
@@ -302,100 +334,103 @@ TEST(MessageConcateTest, AllValid) {
   test_out.stop();
   test_out.cleanup();
 
-  concate.stop();
-  concate.cleanup();
+  split.stop();
+  split.cleanup();
 }
 
-// Tests MessageConcate class for data valid on some input ports.
-TEST(MessageConcateTest, InvalidCaughtOnTheSameLevel) {
+
+// Tests MessageSplit class for data valid on some input ports.
+TEST(MessageSplitTest, AllValidExceptLowest) {
+
   // the component under test
-  MessageConcate<Container_Ports > concate("concate");
-  concate.setActivity( new RTT::extras::SlaveActivity() );
-  EXPECT_TRUE( concate.configure() );
-  EXPECT_TRUE( concate.start() );
-  EXPECT_EQ( concate.ports()->getPortNames().size(), 17);
+  MessageSplit<Container_Ports > split("split");
+  split.setActivity( new RTT::extras::SlaveActivity() );
+  EXPECT_TRUE( split.configure() );
+  EXPECT_TRUE( split.start() );
+  EXPECT_EQ( split.ports()->getPortNames().size(), 17);
 
   // component that writes data on input ports of the component under test
   TestComponentIn test_in("test_in");
   test_in.setActivity( new RTT::extras::SlaveActivity() );
-  std::vector<std::string > not_connected_ports;
-  not_connected_ports.push_back("cont1_sub1_field1");
-  EXPECT_TRUE( test_in.connectPorts(&concate, not_connected_ports) );
+  EXPECT_TRUE( test_in.connectPorts(&split) );
   EXPECT_TRUE( test_in.configure() );
   EXPECT_TRUE( test_in.start() );
 
   // component that reads data from output port of the component under test
   TestComponentOut test_out("test_out");
   test_out.setActivity( new RTT::extras::SlaveActivity() );
-  EXPECT_TRUE( test_out.connectPorts(&concate) );
+  EXPECT_TRUE( test_out.connectPorts(&split) );
   EXPECT_TRUE( test_out.configure() );
   EXPECT_TRUE( test_out.start() );
 
   // generate some data
   Container cont_in;
   initContainerData(cont_in);
+  cont_in.cont1.sub1.field1_valid = false;
 
   // load the data into test_in component
   test_in.setData( cont_in );
 
   // execute all components
   test_in.getActivity()->execute();
-  concate.getActivity()->execute();
+  split.getActivity()->execute();
   test_out.getActivity()->execute();
 
   // get the result data
   Container cont_out = test_out.getData();
+
+  // check data flow status
+  EXPECT_EQ(test_out.getStatus("cont1_sub1_field1"), RTT::NoData);
+  EXPECT_EQ(test_out.getStatus("cont1_sub1_field2"), RTT::NewData);
+  EXPECT_EQ(test_out.getStatus("cont1_sub2_field1"), RTT::NewData);
+  EXPECT_EQ(test_out.getStatus("cont1_sub2_field2"), RTT::NewData);
+  EXPECT_EQ(test_out.getStatus("cont1_field1"), RTT::NewData);
+  EXPECT_EQ(test_out.getStatus("cont1_field2"), RTT::NewData);
+  EXPECT_EQ(test_out.getStatus("cont2_sub1_field1"), RTT::NewData);
+  EXPECT_EQ(test_out.getStatus("cont2_sub1_field2"), RTT::NewData);
+  EXPECT_EQ(test_out.getStatus("cont2_sub2_field1"), RTT::NewData);
+  EXPECT_EQ(test_out.getStatus("cont2_sub2_field2"), RTT::NewData);
+  EXPECT_EQ(test_out.getStatus("cont2_field1"), RTT::NewData);
+  EXPECT_EQ(test_out.getStatus("cont2_field2"), RTT::NewData);
+  EXPECT_EQ(test_out.getStatus("cont3"), RTT::NewData);
+  EXPECT_EQ(test_out.getStatus("cont4"), RTT::NewData);
+  EXPECT_EQ(test_out.getStatus("field1"), RTT::NewData);
+  EXPECT_EQ(test_out.getStatus("field2"), RTT::NewData);
+
 
   // check the data
-
-  EXPECT_EQ(cont_out.cont1.sub1.field1,         0);         // invalid values are set to default values
-  EXPECT_EQ(cont_out.cont1.sub1.field1_valid,   false);     // this was not connected, so it is invalid
+  // TODO: due to bug https://github.com/orocos-toolchain/rtt/issues/177
+  // value of data sample read on port with RTT::NoData status is undefined
+  // TODO: uncomment these line when the bug is resolved
+  //EXPECT_EQ(cont_out.cont1.sub1.field1,         0);
   EXPECT_EQ(cont_out.cont1.sub1.field2,         cont_in.cont1.sub1.field2);
-  EXPECT_EQ(cont_out.cont1.sub1_valid,          true);
   EXPECT_EQ(cont_out.cont1.sub2.field1,         cont_in.cont1.sub2.field1);
-  EXPECT_EQ(cont_out.cont1.sub2.field1_valid,   true);
   EXPECT_EQ(cont_out.cont1.sub2.field2,         cont_in.cont1.sub2.field2);
   EXPECT_EQ(cont_out.cont1.field1,              cont_in.cont1.field1);
-  EXPECT_EQ(cont_out.cont1.field1_valid,        true);
   EXPECT_EQ(cont_out.cont1.field2,              cont_in.cont1.field2);
-  EXPECT_EQ(cont_out.cont1_valid,               true);
 
   EXPECT_EQ(cont_out.cont2.sub1.field1,         cont_in.cont2.sub1.field1);
-  EXPECT_EQ(cont_out.cont2.sub1.field1_valid,   true);
   EXPECT_EQ(cont_out.cont2.sub1.field2,         cont_in.cont2.sub1.field2);
-  EXPECT_EQ(cont_out.cont2.sub1_valid,          true);
   EXPECT_EQ(cont_out.cont2.sub2.field1,         cont_in.cont2.sub2.field1);
-  EXPECT_EQ(cont_out.cont2.sub2.field1_valid,   true);
   EXPECT_EQ(cont_out.cont2.sub2.field2,         cont_in.cont2.sub2.field2);
   EXPECT_EQ(cont_out.cont2.field1,              cont_in.cont2.field1);
-  EXPECT_EQ(cont_out.cont2.field1_valid,        true);
   EXPECT_EQ(cont_out.cont2.field2,              cont_in.cont2.field2);
 
   EXPECT_EQ(cont_out.cont3.sub1.field1,         cont_in.cont3.sub1.field1);
-  EXPECT_EQ(cont_out.cont3.sub1.field1_valid,   false);                     // this field is set manually
   EXPECT_EQ(cont_out.cont3.sub1.field2,         cont_in.cont3.sub1.field2);
-  EXPECT_EQ(cont_out.cont3.sub1_valid,          false);                     // this field is set manually
   EXPECT_EQ(cont_out.cont3.sub2.field1,         cont_in.cont3.sub2.field1);
-  EXPECT_EQ(cont_out.cont3.sub2.field1_valid,   false);                     // this field is set manually
   EXPECT_EQ(cont_out.cont3.sub2.field2,         cont_in.cont3.sub2.field2);
   EXPECT_EQ(cont_out.cont3.field1,              cont_in.cont3.field1);
-  EXPECT_EQ(cont_out.cont3.field1_valid,        false);                     // this field is set manually
   EXPECT_EQ(cont_out.cont3.field2,              cont_in.cont3.field2);
-  EXPECT_EQ(cont_out.cont3_valid,               true);
 
   EXPECT_EQ(cont_out.cont4.sub1.field1,         cont_in.cont4.sub1.field1);
-  EXPECT_EQ(cont_out.cont4.sub1.field1_valid,   false);                     // this field is set manually
   EXPECT_EQ(cont_out.cont4.sub1.field2,         cont_in.cont4.sub1.field2);
-  EXPECT_EQ(cont_out.cont4.sub1_valid,          true);                      // this field is set manually
   EXPECT_EQ(cont_out.cont4.sub2.field1,         cont_in.cont4.sub2.field1);
-  EXPECT_EQ(cont_out.cont4.sub2.field1_valid,   false);                     // this field is set manually
   EXPECT_EQ(cont_out.cont4.sub2.field2,         cont_in.cont4.sub2.field2);
   EXPECT_EQ(cont_out.cont4.field1,              cont_in.cont4.field1);
-  EXPECT_EQ(cont_out.cont4.field1_valid,        false);                     // this field is set manually
   EXPECT_EQ(cont_out.cont4.field2,              cont_in.cont4.field2);
 
   EXPECT_EQ(cont_out.field1,                    cont_in.field1);
-  EXPECT_EQ(cont_out.field1_valid,              true);
 
   EXPECT_EQ(cont_out.field2,                    cont_in.field2);
 
@@ -406,101 +441,102 @@ TEST(MessageConcateTest, InvalidCaughtOnTheSameLevel) {
   test_out.stop();
   test_out.cleanup();
 
-  concate.stop();
-  concate.cleanup();
+  split.stop();
+  split.cleanup();
 }
 
+// Tests MessageSplit class for data valid on some input ports.
+TEST(MessageSplitTest, AllValidExceptMiddle) {
 
-// Tests MessageConcate class for data valid on some input ports.
-TEST(MessageConcateTest, InvalidCaughtOnHigherLevel) {
   // the component under test
-  MessageConcate<Container_Ports > concate("concate");
-  concate.setActivity( new RTT::extras::SlaveActivity() );
-  EXPECT_TRUE( concate.configure() );
-  EXPECT_TRUE( concate.start() );
-  EXPECT_EQ( concate.ports()->getPortNames().size(), 17);
+  MessageSplit<Container_Ports > split("split");
+  split.setActivity( new RTT::extras::SlaveActivity() );
+  EXPECT_TRUE( split.configure() );
+  EXPECT_TRUE( split.start() );
+  EXPECT_EQ( split.ports()->getPortNames().size(), 17);
 
   // component that writes data on input ports of the component under test
   TestComponentIn test_in("test_in");
   test_in.setActivity( new RTT::extras::SlaveActivity() );
-  std::vector<std::string > not_connected_ports;
-  not_connected_ports.push_back("cont1_sub1_field2");
-  EXPECT_TRUE( test_in.connectPorts(&concate, not_connected_ports) );
+  EXPECT_TRUE( test_in.connectPorts(&split) );
   EXPECT_TRUE( test_in.configure() );
   EXPECT_TRUE( test_in.start() );
 
   // component that reads data from output port of the component under test
   TestComponentOut test_out("test_out");
   test_out.setActivity( new RTT::extras::SlaveActivity() );
-  EXPECT_TRUE( test_out.connectPorts(&concate) );
+  EXPECT_TRUE( test_out.connectPorts(&split) );
   EXPECT_TRUE( test_out.configure() );
   EXPECT_TRUE( test_out.start() );
 
   // generate some data
   Container cont_in;
   initContainerData(cont_in);
+  cont_in.cont1.sub1_valid = false;
 
   // load the data into test_in component
   test_in.setData( cont_in );
 
   // execute all components
   test_in.getActivity()->execute();
-  concate.getActivity()->execute();
+  split.getActivity()->execute();
   test_out.getActivity()->execute();
 
   // get the result data
   Container cont_out = test_out.getData();
+
+  // check data flow status
+  EXPECT_EQ(test_out.getStatus("cont1_sub1_field1"), RTT::NoData);
+  EXPECT_EQ(test_out.getStatus("cont1_sub1_field2"), RTT::NoData);
+  EXPECT_EQ(test_out.getStatus("cont1_sub2_field1"), RTT::NewData);
+  EXPECT_EQ(test_out.getStatus("cont1_sub2_field2"), RTT::NewData);
+  EXPECT_EQ(test_out.getStatus("cont1_field1"), RTT::NewData);
+  EXPECT_EQ(test_out.getStatus("cont1_field2"), RTT::NewData);
+  EXPECT_EQ(test_out.getStatus("cont2_sub1_field1"), RTT::NewData);
+  EXPECT_EQ(test_out.getStatus("cont2_sub1_field2"), RTT::NewData);
+  EXPECT_EQ(test_out.getStatus("cont2_sub2_field1"), RTT::NewData);
+  EXPECT_EQ(test_out.getStatus("cont2_sub2_field2"), RTT::NewData);
+  EXPECT_EQ(test_out.getStatus("cont2_field1"), RTT::NewData);
+  EXPECT_EQ(test_out.getStatus("cont2_field2"), RTT::NewData);
+  EXPECT_EQ(test_out.getStatus("cont3"), RTT::NewData);
+  EXPECT_EQ(test_out.getStatus("cont4"), RTT::NewData);
+  EXPECT_EQ(test_out.getStatus("field1"), RTT::NewData);
+  EXPECT_EQ(test_out.getStatus("field2"), RTT::NewData);
+
 
   // check the data
-
-  EXPECT_EQ(cont_out.cont1.sub1.field1,         0);     // invalid values are set to default values
-  EXPECT_EQ(cont_out.cont1.sub1.field1_valid,   false); // invalid values are set to default values
-  EXPECT_EQ(cont_out.cont1.sub1.field2,         0);     // this was not connected, so the whole container is invalid
-  EXPECT_EQ(cont_out.cont1.sub1_valid,          false);
+  // TODO: due to bug https://github.com/orocos-toolchain/rtt/issues/177
+  // value of data sample read on port with RTT::NoData status is undefined
+  // TODO: uncomment these line when the bug is resolved
+  //EXPECT_EQ(cont_out.cont1.sub1.field1,         0);
+  //EXPECT_EQ(cont_out.cont1.sub1.field2,         0);
   EXPECT_EQ(cont_out.cont1.sub2.field1,         cont_in.cont1.sub2.field1);
-  EXPECT_EQ(cont_out.cont1.sub2.field1_valid,   true);
   EXPECT_EQ(cont_out.cont1.sub2.field2,         cont_in.cont1.sub2.field2);
   EXPECT_EQ(cont_out.cont1.field1,              cont_in.cont1.field1);
-  EXPECT_EQ(cont_out.cont1.field1_valid,        true);
   EXPECT_EQ(cont_out.cont1.field2,              cont_in.cont1.field2);
-  EXPECT_EQ(cont_out.cont1_valid,               true);
 
   EXPECT_EQ(cont_out.cont2.sub1.field1,         cont_in.cont2.sub1.field1);
-  EXPECT_EQ(cont_out.cont2.sub1.field1_valid,   true);
   EXPECT_EQ(cont_out.cont2.sub1.field2,         cont_in.cont2.sub1.field2);
-  EXPECT_EQ(cont_out.cont2.sub1_valid,          true);
   EXPECT_EQ(cont_out.cont2.sub2.field1,         cont_in.cont2.sub2.field1);
-  EXPECT_EQ(cont_out.cont2.sub2.field1_valid,   true);
   EXPECT_EQ(cont_out.cont2.sub2.field2,         cont_in.cont2.sub2.field2);
   EXPECT_EQ(cont_out.cont2.field1,              cont_in.cont2.field1);
-  EXPECT_EQ(cont_out.cont2.field1_valid,        true);
   EXPECT_EQ(cont_out.cont2.field2,              cont_in.cont2.field2);
 
   EXPECT_EQ(cont_out.cont3.sub1.field1,         cont_in.cont3.sub1.field1);
-  EXPECT_EQ(cont_out.cont3.sub1.field1_valid,   false);                     // this field is set manually
   EXPECT_EQ(cont_out.cont3.sub1.field2,         cont_in.cont3.sub1.field2);
-  EXPECT_EQ(cont_out.cont3.sub1_valid,          false);                     // this field is set manually
   EXPECT_EQ(cont_out.cont3.sub2.field1,         cont_in.cont3.sub2.field1);
-  EXPECT_EQ(cont_out.cont3.sub2.field1_valid,   false);                     // this field is set manually
   EXPECT_EQ(cont_out.cont3.sub2.field2,         cont_in.cont3.sub2.field2);
   EXPECT_EQ(cont_out.cont3.field1,              cont_in.cont3.field1);
-  EXPECT_EQ(cont_out.cont3.field1_valid,        false);                     // this field is set manually
   EXPECT_EQ(cont_out.cont3.field2,              cont_in.cont3.field2);
-  EXPECT_EQ(cont_out.cont3_valid,               true);
 
   EXPECT_EQ(cont_out.cont4.sub1.field1,         cont_in.cont4.sub1.field1);
-  EXPECT_EQ(cont_out.cont4.sub1.field1_valid,   false);                     // this field is set manually
   EXPECT_EQ(cont_out.cont4.sub1.field2,         cont_in.cont4.sub1.field2);
-  EXPECT_EQ(cont_out.cont4.sub1_valid,          true);                      // this field is set manually
   EXPECT_EQ(cont_out.cont4.sub2.field1,         cont_in.cont4.sub2.field1);
-  EXPECT_EQ(cont_out.cont4.sub2.field1_valid,   false);                     // this field is set manually
   EXPECT_EQ(cont_out.cont4.sub2.field2,         cont_in.cont4.sub2.field2);
   EXPECT_EQ(cont_out.cont4.field1,              cont_in.cont4.field1);
-  EXPECT_EQ(cont_out.cont4.field1_valid,        false);                     // this field is set manually
   EXPECT_EQ(cont_out.cont4.field2,              cont_in.cont4.field2);
 
   EXPECT_EQ(cont_out.field1,                    cont_in.field1);
-  EXPECT_EQ(cont_out.field1_valid,              true);
 
   EXPECT_EQ(cont_out.field2,                    cont_in.field2);
 
@@ -511,203 +547,101 @@ TEST(MessageConcateTest, InvalidCaughtOnHigherLevel) {
   test_out.stop();
   test_out.cleanup();
 
-  concate.stop();
-  concate.cleanup();
+  split.stop();
+  split.cleanup();
 }
 
+// Tests MessageSplit class for data valid on some input ports.
+TEST(MessageSplitTest, AllValidExceptHigh) {
 
-// Tests MessageConcate class for data valid on some input ports.
-TEST(MessageConcateTest, InvalidCaughtOnHighestLevel) {
   // the component under test
-  MessageConcate<Container_Ports > concate("concate");
-  concate.setActivity( new RTT::extras::SlaveActivity() );
-  EXPECT_TRUE( concate.configure() );
-  EXPECT_TRUE( concate.start() );
-  EXPECT_EQ( concate.ports()->getPortNames().size(), 17);
+  MessageSplit<Container_Ports > split("split");
+  split.setActivity( new RTT::extras::SlaveActivity() );
+  EXPECT_TRUE( split.configure() );
+  EXPECT_TRUE( split.start() );
+  EXPECT_EQ( split.ports()->getPortNames().size(), 17);
 
   // component that writes data on input ports of the component under test
   TestComponentIn test_in("test_in");
   test_in.setActivity( new RTT::extras::SlaveActivity() );
-  std::vector<std::string > not_connected_ports;
-  not_connected_ports.push_back("cont2_sub2_field2");
-  EXPECT_TRUE( test_in.connectPorts(&concate, not_connected_ports) );
+  EXPECT_TRUE( test_in.connectPorts(&split) );
   EXPECT_TRUE( test_in.configure() );
   EXPECT_TRUE( test_in.start() );
 
   // component that reads data from output port of the component under test
   TestComponentOut test_out("test_out");
   test_out.setActivity( new RTT::extras::SlaveActivity() );
-  EXPECT_TRUE( test_out.connectPorts(&concate) );
+  EXPECT_TRUE( test_out.connectPorts(&split) );
   EXPECT_TRUE( test_out.configure() );
   EXPECT_TRUE( test_out.start() );
 
   // generate some data
   Container cont_in;
   initContainerData(cont_in);
+  cont_in.cont1_valid = false;
 
   // load the data into test_in component
   test_in.setData( cont_in );
 
   // execute all components
   test_in.getActivity()->execute();
-  concate.getActivity()->execute();
+  split.getActivity()->execute();
   test_out.getActivity()->execute();
 
   // get the result data
   Container cont_out = test_out.getData();
 
-  // check the data (all values are invalid)
-  EXPECT_EQ(cont_out.cont1.sub1.field1,         0);
-  EXPECT_EQ(cont_out.cont1.sub1.field1_valid,   false);
-  EXPECT_EQ(cont_out.cont1.sub1.field2,         0);
-  EXPECT_EQ(cont_out.cont1.sub1_valid,          false);
-  EXPECT_EQ(cont_out.cont1.sub2.field1,         0);
-  EXPECT_EQ(cont_out.cont1.sub2.field1_valid,   false);
-  EXPECT_EQ(cont_out.cont1.sub2.field2,         0);
-  EXPECT_EQ(cont_out.cont1.field1,              0.0);
-  EXPECT_EQ(cont_out.cont1.field1_valid,        false);
-  EXPECT_EQ(cont_out.cont1.field2,              0.0);
-  EXPECT_EQ(cont_out.cont1_valid,               false);
+  // check data flow status
+  EXPECT_EQ(test_out.getStatus("cont1_sub1_field1"), RTT::NoData);
+  EXPECT_EQ(test_out.getStatus("cont1_sub1_field2"), RTT::NoData);
+  EXPECT_EQ(test_out.getStatus("cont1_sub2_field1"), RTT::NoData);
+  EXPECT_EQ(test_out.getStatus("cont1_sub2_field2"), RTT::NoData);
+  EXPECT_EQ(test_out.getStatus("cont1_field1"), RTT::NoData);
+  EXPECT_EQ(test_out.getStatus("cont1_field2"), RTT::NoData);
+  EXPECT_EQ(test_out.getStatus("cont2_sub1_field1"), RTT::NewData);
+  EXPECT_EQ(test_out.getStatus("cont2_sub1_field2"), RTT::NewData);
+  EXPECT_EQ(test_out.getStatus("cont2_sub2_field1"), RTT::NewData);
+  EXPECT_EQ(test_out.getStatus("cont2_sub2_field2"), RTT::NewData);
+  EXPECT_EQ(test_out.getStatus("cont2_field1"), RTT::NewData);
+  EXPECT_EQ(test_out.getStatus("cont2_field2"), RTT::NewData);
+  EXPECT_EQ(test_out.getStatus("cont3"), RTT::NewData);
+  EXPECT_EQ(test_out.getStatus("cont4"), RTT::NewData);
+  EXPECT_EQ(test_out.getStatus("field1"), RTT::NewData);
+  EXPECT_EQ(test_out.getStatus("field2"), RTT::NewData);
 
-  EXPECT_EQ(cont_out.cont2.sub1.field1,         0);
-  EXPECT_EQ(cont_out.cont2.sub1.field1_valid,   false);
-  EXPECT_EQ(cont_out.cont2.sub1.field2,         0);
-  EXPECT_EQ(cont_out.cont2.sub1_valid,          false);
-  EXPECT_EQ(cont_out.cont2.sub2.field1,         0);
-  EXPECT_EQ(cont_out.cont2.sub2.field1_valid,   false);
-  EXPECT_EQ(cont_out.cont2.sub2.field2,         0);
-  EXPECT_EQ(cont_out.cont2.field1,              0.0);
-  EXPECT_EQ(cont_out.cont2.field1_valid,        false);
-  EXPECT_EQ(cont_out.cont2.field2,              0.0);
-
-  EXPECT_EQ(cont_out.cont3.sub1.field1,         0);
-  EXPECT_EQ(cont_out.cont3.sub1.field1_valid,   false);
-  EXPECT_EQ(cont_out.cont3.sub1.field2,         0);
-  EXPECT_EQ(cont_out.cont3.sub1_valid,          false);
-  EXPECT_EQ(cont_out.cont3.sub2.field1,         0);
-  EXPECT_EQ(cont_out.cont3.sub2.field1_valid,   false);
-  EXPECT_EQ(cont_out.cont3.sub2.field2,         0);
-  EXPECT_EQ(cont_out.cont3.field1,              0.0);
-  EXPECT_EQ(cont_out.cont3.field1_valid,        false);
-  EXPECT_EQ(cont_out.cont3.field2,              0.0);
-
-  EXPECT_EQ(cont_out.cont4.sub1.field1,         0);
-  EXPECT_EQ(cont_out.cont4.sub1.field1_valid,   false);
-  EXPECT_EQ(cont_out.cont4.sub1.field2,         0);
-  EXPECT_EQ(cont_out.cont4.sub1_valid,          false);
-  EXPECT_EQ(cont_out.cont4.sub2.field1,         0);
-  EXPECT_EQ(cont_out.cont4.sub2.field1_valid,   false);
-  EXPECT_EQ(cont_out.cont4.sub2.field2,         0);
-  EXPECT_EQ(cont_out.cont4.field1,              0.0);
-  EXPECT_EQ(cont_out.cont4.field1_valid,        false);
-  EXPECT_EQ(cont_out.cont4.field2,              0.0);
-
-  EXPECT_EQ(cont_out.field1,                    0);
-  EXPECT_EQ(cont_out.field1_valid,              false);
-
-  EXPECT_EQ(cont_out.field2,                    0);
-
-  // stop & cleanup
-  test_in.stop();
-  test_in.cleanup();
-
-  test_out.stop();
-  test_out.cleanup();
-
-  concate.stop();
-  concate.cleanup();
-}
-
-
-// Tests MessageConcate class for data valid on some input ports.
-TEST(MessageConcateTest, InvalidCaughtOnMiddleLevel) {
-  // the component under test
-  MessageConcate<Container_Ports > concate("concate");
-  concate.setActivity( new RTT::extras::SlaveActivity() );
-  EXPECT_TRUE( concate.configure() );
-  EXPECT_TRUE( concate.start() );
-  EXPECT_EQ( concate.ports()->getPortNames().size(), 17);
-
-  // component that writes data on input ports of the component under test
-  TestComponentIn test_in("test_in");
-  test_in.setActivity( new RTT::extras::SlaveActivity() );
-  std::vector<std::string > not_connected_ports;
-  not_connected_ports.push_back("cont1_sub2_field2");
-  EXPECT_TRUE( test_in.connectPorts(&concate, not_connected_ports) );
-  EXPECT_TRUE( test_in.configure() );
-  EXPECT_TRUE( test_in.start() );
-
-  // component that reads data from output port of the component under test
-  TestComponentOut test_out("test_out");
-  test_out.setActivity( new RTT::extras::SlaveActivity() );
-  EXPECT_TRUE( test_out.connectPorts(&concate) );
-  EXPECT_TRUE( test_out.configure() );
-  EXPECT_TRUE( test_out.start() );
-
-  // generate some data
-  Container cont_in;
-  initContainerData(cont_in);
-
-  // load the data into test_in component
-  test_in.setData( cont_in );
-
-  // execute all components
-  test_in.getActivity()->execute();
-  concate.getActivity()->execute();
-  test_out.getActivity()->execute();
-
-  // get the result data
-  Container cont_out = test_out.getData();
-
-  // check the data (only the high level container is invalid)
-  EXPECT_EQ(cont_out.cont1.sub1.field1,         0);
-  EXPECT_EQ(cont_out.cont1.sub1.field1_valid,   false);
-  EXPECT_EQ(cont_out.cont1.sub1.field2,         0);
-  EXPECT_EQ(cont_out.cont1.sub1_valid,          false);
-  EXPECT_EQ(cont_out.cont1.sub2.field1,         0);
-  EXPECT_EQ(cont_out.cont1.sub2.field1_valid,   false);
-  EXPECT_EQ(cont_out.cont1.sub2.field2,         0);
-  EXPECT_EQ(cont_out.cont1.field1,              0.0);
-  EXPECT_EQ(cont_out.cont1.field1_valid,        false);
-  EXPECT_EQ(cont_out.cont1.field2,              0.0);
-  EXPECT_EQ(cont_out.cont1_valid,               false);
+  // check the data
+  // TODO: due to bug https://github.com/orocos-toolchain/rtt/issues/177
+  // value of data sample read on port with RTT::NoData status is undefined
+  // TODO: uncomment these line when the bug is resolved
+//  EXPECT_EQ(cont_out.cont1.sub1.field1,         0);
+//  EXPECT_EQ(cont_out.cont1.sub1.field2,         0);
+//  EXPECT_EQ(cont_out.cont1.sub2.field1,         0);
+//  EXPECT_EQ(cont_out.cont1.sub2.field2,         0);
+//  EXPECT_EQ(cont_out.cont1.field1,              0.0);
+//  EXPECT_EQ(cont_out.cont1.field2,              0.0);
 
   EXPECT_EQ(cont_out.cont2.sub1.field1,         cont_in.cont2.sub1.field1);
-  EXPECT_EQ(cont_out.cont2.sub1.field1_valid,   true);
   EXPECT_EQ(cont_out.cont2.sub1.field2,         cont_in.cont2.sub1.field2);
-  EXPECT_EQ(cont_out.cont2.sub1_valid,          true);
   EXPECT_EQ(cont_out.cont2.sub2.field1,         cont_in.cont2.sub2.field1);
-  EXPECT_EQ(cont_out.cont2.sub2.field1_valid,   true);
   EXPECT_EQ(cont_out.cont2.sub2.field2,         cont_in.cont2.sub2.field2);
   EXPECT_EQ(cont_out.cont2.field1,              cont_in.cont2.field1);
-  EXPECT_EQ(cont_out.cont2.field1_valid,        true);
   EXPECT_EQ(cont_out.cont2.field2,              cont_in.cont2.field2);
 
   EXPECT_EQ(cont_out.cont3.sub1.field1,         cont_in.cont3.sub1.field1);
-  EXPECT_EQ(cont_out.cont3.sub1.field1_valid,   false);                     // this field is set manually
   EXPECT_EQ(cont_out.cont3.sub1.field2,         cont_in.cont3.sub1.field2);
-  EXPECT_EQ(cont_out.cont3.sub1_valid,          false);                     // this field is set manually
   EXPECT_EQ(cont_out.cont3.sub2.field1,         cont_in.cont3.sub2.field1);
-  EXPECT_EQ(cont_out.cont3.sub2.field1_valid,   false);
   EXPECT_EQ(cont_out.cont3.sub2.field2,         cont_in.cont3.sub2.field2);
   EXPECT_EQ(cont_out.cont3.field1,              cont_in.cont3.field1);
-  EXPECT_EQ(cont_out.cont3.field1_valid,        false);                     // this field is set manually
   EXPECT_EQ(cont_out.cont3.field2,              cont_in.cont3.field2);
-  EXPECT_EQ(cont_out.cont3_valid,               true);
 
   EXPECT_EQ(cont_out.cont4.sub1.field1,         cont_in.cont4.sub1.field1);
-  EXPECT_EQ(cont_out.cont4.sub1.field1_valid,   false);                     // this field is set manually
   EXPECT_EQ(cont_out.cont4.sub1.field2,         cont_in.cont4.sub1.field2);
-  EXPECT_EQ(cont_out.cont4.sub1_valid,          true);                      // this field is set manually
   EXPECT_EQ(cont_out.cont4.sub2.field1,         cont_in.cont4.sub2.field1);
-  EXPECT_EQ(cont_out.cont4.sub2.field1_valid,   false);                     // this field is set manually
   EXPECT_EQ(cont_out.cont4.sub2.field2,         cont_in.cont4.sub2.field2);
   EXPECT_EQ(cont_out.cont4.field1,              cont_in.cont4.field1);
-  EXPECT_EQ(cont_out.cont4.field1_valid,        false);                     // this field is set manually
   EXPECT_EQ(cont_out.cont4.field2,              cont_in.cont4.field2);
 
   EXPECT_EQ(cont_out.field1,                    cont_in.field1);
-  EXPECT_EQ(cont_out.field1_valid,              true);
 
   EXPECT_EQ(cont_out.field2,                    cont_in.field2);
 
@@ -718,9 +652,9 @@ TEST(MessageConcateTest, InvalidCaughtOnMiddleLevel) {
   test_out.stop();
   test_out.cleanup();
 
-  concate.stop();
-  concate.cleanup();
+  split.stop();
+  split.cleanup();
 }
 
-};  // namespace message_concate_tests
+};  // namespace message_split_tests
 

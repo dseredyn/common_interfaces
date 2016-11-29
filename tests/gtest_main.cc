@@ -42,7 +42,7 @@ GTEST_API_ int main(int argc, char **argv) {
 
   RTT::Logger::log().setStdStream(std::cerr);
   RTT::Logger::log().mayLogStdOut(true);
-  RTT::Logger::log().setLogLevel(RTT::Logger::Info);
+  RTT::Logger::log().setLogLevel(RTT::Logger::Warning);
 
   testing::InitGoogleTest(&argc, argv);
 
