@@ -25,8 +25,8 @@
  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-#ifndef __INTERFACE_PORTS_H__
-#define __INTERFACE_PORTS_H__
+#ifndef __COMMON_INTERFACES_INTERFACE_PORTS_H__
+#define __COMMON_INTERFACES_INTERFACE_PORTS_H__
 
 #include <cstring>
 #include <vector>
@@ -39,89 +39,6 @@
 #include "common_interfaces/interface_port_data.h"
 
 namespace interface_ports {
-
-template <typename innerT, typename rosT >
-class PortData {
-public:
-    PortData() {}
-
-    void convertFromROS(const rosT &data) {
-        data_.convertFromROS(data);
-    }
-
-    void convertToROS(rosT &data) {
-        data_.convertToROS(data);
-    }
-
-    innerT& getDataRef() {
-        return data_.data_;
-    }
-
-protected:
-    PortRawData<innerT, rosT > data_;
-};
-
-template <template <typename Type> class T, typename innerT >
-class PortOperation { };
-
-template <typename innerT >
-class PortOperation<RTT::InputPort, innerT> {
-public:
-    PortOperation(RTT::TaskContext &tc, const std::string &port_name) :
-        port_(port_name + "_INPORT")
-    {
-        tc.ports()->addPort(port_);
-    }
-
-    bool readPorts(innerT &data) {
-        return port_.read(data) == RTT::NewData;
-    }
-
-    void setDataSample(innerT &data) {
-        // no operation for input port
-    }
-
-    void setName(const std::string& name) {
-        port_.setName(name);
-    }
-
-    const std::string& getName() const {
-        return port_.getName();
-    }
-
-protected:
-    RTT::InputPort<innerT > port_;
-};
-
-template <typename innerT >
-class PortOperation<RTT::OutputPort, innerT> {
-public:
-    PortOperation(RTT::TaskContext &tc, const std::string &port_name) :
-        port_(port_name + "_OUTPORT", true)
-    {
-        tc.ports()->addPort(port_);
-    }
-
-    bool writePorts(innerT &data) {
-        port_.write(data);
-        return true;
-    }
-
-    void setDataSample(innerT &data) {
-        port_.setDataSample(data);
-    }
-
-    void setName(const std::string& name) {
-        port_.setName(name);
-    }
-
-    const std::string& getName() const {
-        return port_.getName();
-    }
-
-protected:
-    RTT::OutputPort<innerT > port_;
-};
 
 template <typename rosC >
 class PortInterface {
@@ -139,10 +56,11 @@ template <typename innerT, typename rosT >
 class Port<RTT::InputPort, innerT, rosT > : public PortInterface<rosT > {
 public:
     Port(RTT::TaskContext &tc, const std::string &port_name) :
-        po_(tc, port_name),
+        port_(port_name + "_INPORT"),
         data_()
     {
-        po_.setDataSample(data_.getDataRef());
+        tc.ports()->addPort(port_);
+        //port_.setDataSample(data_.data_);     // no operation for input port
     }
 
     virtual void convertFromROS(const rosT &data) {
@@ -154,37 +72,29 @@ public:
     }
 
     virtual bool readPorts() {
-        return po_.readPorts(data_.getDataRef());
+        return port_.read(data_.data_) == RTT::NewData;
     }
 
     virtual bool writePorts() {
         return false;
     }
 
-    virtual void setName(const std::string& name) {
-        po_.setName(name);
-    }
-
-    virtual const std::string& getName() const {
-        return po_.getName();
-    }
-
-
 protected:
 
-    PortOperation<RTT::InputPort, innerT> po_;
+    RTT::InputPort<innerT > port_;
 
-    PortData<innerT, rosT > data_;
+    PortRawData<innerT, rosT > data_;
 };
 
 template <typename innerT, typename rosT >
 class Port<RTT::OutputPort, innerT, rosT > : public PortInterface<rosT > {
 public:
     Port(RTT::TaskContext &tc, const std::string &port_name) :
-        po_(tc, port_name),
+        port_(port_name + "_OUTPORT", true),
         data_()
     {
-        po_.setDataSample(data_.getDataRef());
+        tc.ports()->addPort(port_);
+        port_.setDataSample(data_.data_);
     }
 
     virtual void convertFromROS(const rosT &data) {
@@ -200,185 +110,17 @@ public:
     }
 
     virtual bool writePorts() {
-        return po_.writePorts(data_.getDataRef());
-    }
-
-    virtual void setName(const std::string& name) {
-        po_.setName(name);
-    }
-
-    virtual const std::string& getName() const {
-        return po_.getName();
+        port_.write(data_.data_);
     }
 
 protected:
 
-    PortOperation<RTT::OutputPort, innerT> po_;
+    RTT::OutputPort<innerT > port_;
 
-    PortData<innerT, rosT > data_;
-};
-/*
-template <typename rosC, typename rosT >
-class PortsContainer : public PortInterface<rosC > {
-public:
-    typedef boost::shared_ptr<PortInterface<rosT > > PortInterfacePtr;
-
-    PortsContainer(rosT rosC::*ptr) :
-        ptr_(ptr)
-    {}
-
-    virtual bool readPorts() {
-        bool result = true;
-        for (int i = 0; i < ports_.size(); ++i) {
-            valid_vec_[i] = ports_[i].first->readPorts();
-            if (ports_[i].second == NULL && !valid_vec_[i]) {
-                result = false;
-            }
-        }
-        return result;
-    }
-
-    virtual bool writePorts() {
-        for (int i = 0; i < ports_.size(); ++i) {
-            if (valid_vec_[i]) {
-                ports_[i].first->writePorts();
-            }
-        }
-        return true;
-    }
-
-    virtual void convertFromROS(const rosC &ros) {
-        for (int i = 0; i < ports_.size(); ++i) {
-            ports_[i].first->convertFromROS(ros.*ptr_);
-            if (ports_[i].second != NULL) {
-                valid_vec_[i] = ros.*ptr_.*ports_[i].second;
-            }
-            else {
-                valid_vec_[i] = true;
-            }
-        }
-    }
-
-    virtual void convertToROS(rosC &ros) {
-        bool invalid_data_handled = true;
-        for (int i = 0; i < ports_.size(); ++i) {
-            if (valid_vec_[i]) {
-                ports_[i].first->convertToROS(ros.*ptr_);
-            }
-            else {
-                ros.*ptr_ = rosT();
-            }
-
-            if (ports_[i].second != NULL) {
-                // the information about invalid data is written to msg field
-                (ros.*ptr_.*ports_[i].second) = valid_vec_[i];
-            }
-            else if (!valid_vec_[i]) {
-                // there is no data_valid field in msg
-                // and the data is invalid, so invalidate whole container
-                invalid_data_handled = false;
-            }
-        }
-        if (!invalid_data_handled) {
-            ros = rosC();
-        }
-    }
-
-    void addPort(PortInterfacePtr port, uint8_t rosT::*ptr = NULL) {
-        ports_.push_back( std::make_pair(port, ptr) );
-        valid_vec_.push_back(false);
-    }
-
-private:
-    std::vector<std::pair<PortInterfacePtr, uint8_t rosT::*>  > ports_;
-    std::vector<bool > valid_vec_;
-    rosT rosC::*ptr_;
+    PortRawData<innerT, rosT > data_;
 };
 
-template <typename rosC >
-class PortsContainer<void, rosC> : public PortInterface<rosC > {
-public:
-    typedef boost::shared_ptr<PortInterface<rosC > > PortInterfacePtr;
-
-    PortsContainer()
-    {}
-
-    virtual bool readPorts() {
-        bool result = true;
-        for (int i = 0; i < ports_.size(); ++i) {
-            valid_vec_[i] = ports_[i].first->readPorts();
-            if (ports_[i].second == NULL && !valid_vec_[i]) {
-                result = false;
-            }
-        }
-        return result;
-    }
-
-    virtual bool writePorts() {
-        for (int i = 0; i < ports_.size(); ++i) {
-            if (valid_vec_[i]) {
-                ports_[i].first->writePorts();
-            }
-        }
-        return true;
-    }
-
-    virtual void convertFromROS(const rosC &ros) {
-        for (int i = 0; i < ports_.size(); ++i) {
-            ports_[i].first->convertFromROS(ros);
-            if (ports_[i].second != NULL) {
-                valid_vec_[i] = ros.*ports_[i].second;
-            }
-            else {
-                valid_vec_[i] = true;
-            }
-        }
-    }
-
-    virtual void convertToROS(rosC &ros) {
-        bool invalid_data_handled = true;
-        for (int i = 0; i < ports_.size(); ++i) {
-            ports_[i].first->convertToROS(ros);
-            if (ports_[i].second != NULL) {
-                // the information about invalid data is written to msg field
-                (ros.*ports_[i].second) = valid_vec_[i];
-            }
-            else if (!valid_vec_[i]) {
-                // there is no data_valid field in msg
-                // and the data is invalid, so invalidate whole container
-                invalid_data_handled = false;
-            }
-        }
-        if (!invalid_data_handled) {
-            ros = rosC();
-        }
-    }
-
-    void addPort(PortInterfacePtr port, uint8_t rosC::*ptr = NULL) {
-        ports_.push_back( std::make_pair(port, ptr) );
-        valid_vec_.push_back(false);
-    }
-
-private:
-    std::vector<std::pair<PortInterfacePtr, uint8_t rosC::*>  > ports_;
-    std::vector<bool > valid_vec_;
-};
-*/
-/*
-template <typename rosC >
-class PortsContainer {
-public:
-
-    virtual bool readPorts() = 0;
-
-    virtual bool writePorts() = 0;
-
-    virtual void convertFromROS(const rosC &ros) = 0;
-
-    virtual void convertToROS(rosC &ros) = 0;
-};
-*/
 };  // namespace interface_ports
 
-#endif  // __INTERFACE_PORTS_H__
+#endif  // __COMMON_INTERFACES_INTERFACE_PORTS_H__
 

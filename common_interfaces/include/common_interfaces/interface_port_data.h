@@ -25,8 +25,8 @@
  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-#ifndef __INTERFACE_PORT_DATA_H__
-#define __INTERFACE_PORT_DATA_H__
+#ifndef __COMMON_INTERFACES_INTERFACE_PORT_DATA_H__
+#define __COMMON_INTERFACES_INTERFACE_PORT_DATA_H__
 
 namespace interface_ports {
 
@@ -50,5 +50,5 @@ public:
 
 };  // namespace interface_ports
 
-#endif  // __INTERFACE_PORT_DATA_H__
+#endif  // __COMMON_INTERFACES_INTERFACE_PORT_DATA_H__
 
