@@ -43,22 +43,22 @@ public:
     explicit TestComponentIn(const std::string& name) :
         TaskContext(name, PreOperational)
     {
-        this->ports()->addPort("Container_cont1_sub1_field1", port1);
-        this->ports()->addPort("Container_cont1_sub1_field2", port2);
-        this->ports()->addPort("Container_cont1_sub2_field1", port3);
-        this->ports()->addPort("Container_cont1_sub2_field2", port4);
-        this->ports()->addPort("Container_cont1_field1", port5);
-        this->ports()->addPort("Container_cont1_field2", port6);
-        this->ports()->addPort("Container_cont2_sub1_field1", port7);
-        this->ports()->addPort("Container_cont2_sub1_field2", port8);
-        this->ports()->addPort("Container_cont2_sub2_field1", port9);
-        this->ports()->addPort("Container_cont2_sub2_field2", port10);
-        this->ports()->addPort("Container_cont2_field1", port11);
-        this->ports()->addPort("Container_cont2_field2", port12);
-        this->ports()->addPort("Container_cont3", port13);
-        this->ports()->addPort("Container_cont4", port14);
-        this->ports()->addPort("Container_field1", port15);
-        this->ports()->addPort("Container_field2", port16);
+        this->ports()->addPort("cont1_sub1_field1", port1);
+        this->ports()->addPort("cont1_sub1_field2", port2);
+        this->ports()->addPort("cont1_sub2_field1", port3);
+        this->ports()->addPort("cont1_sub2_field2", port4);
+        this->ports()->addPort("cont1_field1", port5);
+        this->ports()->addPort("cont1_field2", port6);
+        this->ports()->addPort("cont2_sub1_field1", port7);
+        this->ports()->addPort("cont2_sub1_field2", port8);
+        this->ports()->addPort("cont2_sub2_field1", port9);
+        this->ports()->addPort("cont2_sub2_field2", port10);
+        this->ports()->addPort("cont2_field1", port11);
+        this->ports()->addPort("cont2_field2", port12);
+        this->ports()->addPort("cont3", port13);
+        this->ports()->addPort("cont4", port14);
+        this->ports()->addPort("field1", port15);
+        this->ports()->addPort("field2", port16);
     }
 
     bool configureHook() {
@@ -337,7 +337,7 @@ TEST(MessageConcateTest, InvalidCaughtOnTheSameLevel) {
   TestComponentIn test_in("test_in");
   test_in.setActivity( new RTT::extras::SlaveActivity() );
   std::vector<std::string > not_connected_ports;
-  not_connected_ports.push_back("Container_cont1_sub1_field1");
+  not_connected_ports.push_back("cont1_sub1_field1");
   EXPECT_TRUE( test_in.connectPorts(&concate, not_connected_ports) );
   EXPECT_TRUE( test_in.configure() );
   EXPECT_TRUE( test_in.start() );
@@ -442,7 +442,7 @@ TEST(MessageConcateTest, InvalidCaughtOnHigherLevel) {
   TestComponentIn test_in("test_in");
   test_in.setActivity( new RTT::extras::SlaveActivity() );
   std::vector<std::string > not_connected_ports;
-  not_connected_ports.push_back("Container_cont1_sub1_field2");
+  not_connected_ports.push_back("cont1_sub1_field2");
   EXPECT_TRUE( test_in.connectPorts(&concate, not_connected_ports) );
   EXPECT_TRUE( test_in.configure() );
   EXPECT_TRUE( test_in.start() );
@@ -547,7 +547,7 @@ TEST(MessageConcateTest, InvalidCaughtOnHighestLevel) {
   TestComponentIn test_in("test_in");
   test_in.setActivity( new RTT::extras::SlaveActivity() );
   std::vector<std::string > not_connected_ports;
-  not_connected_ports.push_back("Container_cont2_sub2_field2");
+  not_connected_ports.push_back("cont2_sub2_field2");
   EXPECT_TRUE( test_in.connectPorts(&concate, not_connected_ports) );
   EXPECT_TRUE( test_in.configure() );
   EXPECT_TRUE( test_in.start() );
@@ -650,7 +650,7 @@ TEST(MessageConcateTest, InvalidCaughtOnMiddleLevel) {
   TestComponentIn test_in("test_in");
   test_in.setActivity( new RTT::extras::SlaveActivity() );
   std::vector<std::string > not_connected_ports;
-  not_connected_ports.push_back("Container_cont1_sub2_field2");
+  not_connected_ports.push_back("cont1_sub2_field2");
   EXPECT_TRUE( test_in.connectPorts(&concate, not_connected_ports) );
   EXPECT_TRUE( test_in.configure() );
   EXPECT_TRUE( test_in.start() );
