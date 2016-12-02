@@ -25,8 +25,8 @@
  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-#ifndef MESSAGE_SPLIT_H__
-#define MESSAGE_SPLIT_H__
+#ifndef MESSAGE_CONCATE_H__
+#define MESSAGE_CONCATE_H__
 
 #include <vector>
 #include <string>
@@ -37,16 +37,16 @@
 using namespace RTT;
 
 template <template <template <typename Type> class RTTport> class Interface>
-class MessageSplit: public RTT::TaskContext {
+class MessageConcate: public RTT::TaskContext {
 public:
-    typedef Interface<RTT::OutputPort > InterfaceOutport;
+    typedef Interface<RTT::InputPort > InterfaceInport;
 
-    explicit MessageSplit(const std::string& name) :
+    explicit MessageConcate(const std::string& name) :
         TaskContext(name, PreOperational),
-        out_(*this),
-        port_msg_in_("msg_INPORT")
+        in_(*this),
+        port_msg_out_("msg_OUTPORT")
     {
-        this->ports()->addPort(port_msg_in_);
+        this->ports()->addPort(port_msg_out_);
     }
 
     bool configureHook() {
@@ -58,20 +58,19 @@ public:
     }
 
     void updateHook() {
-        if (port_msg_in_.read(msg_) == RTT::NewData) {
-            out_.convertFromROS(msg_);
-            out_.writePorts();
-        }
+        in_.readPorts();
+        in_.convertToROS(msg_);
+        port_msg_out_.write(msg_);
     }
 
 private:
 
-    InterfaceOutport out_;
+    InterfaceInport in_;
 
-    typename InterfaceOutport::Container msg_;
-    RTT::InputPort<typename InterfaceOutport::Container > port_msg_in_;
+    typename InterfaceInport::Container_ msg_;
+    RTT::OutputPort<typename InterfaceInport::Container_ > port_msg_out_;
 };
 
 
-#endif  // MESSAGE_SPLIT_H__
+#endif  // MESSAGE_CONCATE_H__
 

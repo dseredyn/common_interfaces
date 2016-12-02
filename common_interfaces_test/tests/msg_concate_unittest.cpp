@@ -26,7 +26,7 @@
 */
 
 #include <limits.h>
-#include "test_ports.h"
+#include "common_interfaces_test_msgs/Container.h"
 #include "common_interfaces/message_concate.h"
 #include <rtt/extras/SlaveActivity.hpp>
 
@@ -34,7 +34,7 @@
 
 namespace message_concate_tests {
 
-using namespace common_interfaces_test_interface;
+using namespace common_interfaces_test_msgs;
 
 class TestComponentIn : public RTT::TaskContext {
 
@@ -43,22 +43,22 @@ public:
     explicit TestComponentIn(const std::string& name) :
         TaskContext(name, PreOperational)
     {
-        this->ports()->addPort("cont1_sub1_field1", port1);
-        this->ports()->addPort("cont1_sub1_field2", port2);
-        this->ports()->addPort("cont1_sub2_field1", port3);
-        this->ports()->addPort("cont1_sub2_field2", port4);
-        this->ports()->addPort("cont1_field1", port5);
-        this->ports()->addPort("cont1_field2", port6);
-        this->ports()->addPort("cont2_sub1_field1", port7);
-        this->ports()->addPort("cont2_sub1_field2", port8);
-        this->ports()->addPort("cont2_sub2_field1", port9);
-        this->ports()->addPort("cont2_sub2_field2", port10);
-        this->ports()->addPort("cont2_field1", port11);
-        this->ports()->addPort("cont2_field2", port12);
-        this->ports()->addPort("cont3", port13);
-        this->ports()->addPort("cont4", port14);
-        this->ports()->addPort("field1", port15);
-        this->ports()->addPort("field2", port16);
+        this->ports()->addPort("Container_cont1_sub1_field1", port1);
+        this->ports()->addPort("Container_cont1_sub1_field2", port2);
+        this->ports()->addPort("Container_cont1_sub2_field1", port3);
+        this->ports()->addPort("Container_cont1_sub2_field2", port4);
+        this->ports()->addPort("Container_cont1_field1", port5);
+        this->ports()->addPort("Container_cont1_field2", port6);
+        this->ports()->addPort("Container_cont2_sub1_field1", port7);
+        this->ports()->addPort("Container_cont2_sub1_field2", port8);
+        this->ports()->addPort("Container_cont2_sub2_field1", port9);
+        this->ports()->addPort("Container_cont2_sub2_field2", port10);
+        this->ports()->addPort("Container_cont2_field1", port11);
+        this->ports()->addPort("Container_cont2_field2", port12);
+        this->ports()->addPort("Container_cont3", port13);
+        this->ports()->addPort("Container_cont4", port14);
+        this->ports()->addPort("Container_field1", port15);
+        this->ports()->addPort("Container_field2", port16);
     }
 
     bool configureHook() {
@@ -100,7 +100,8 @@ public:
             if (ignore) {
                 continue;
             }
-            if (!ports[i]->connectTo( other->ports()->getPort(ports[i]->getName() + "_INPORT") )) {
+            RTT::base::PortInterface* pi = other->ports()->getPort(ports[i]->getName() + "_INPORT");
+            if (!pi || !ports[i]->connectTo( pi )) {
                 return false;
             }
         }
@@ -137,7 +138,8 @@ class TestComponentOut : public RTT::TaskContext {
 public:
 
     explicit TestComponentOut(const std::string& name) :
-        TaskContext(name, PreOperational)
+        TaskContext(name, PreOperational),
+        read_successful_(false)
     {
         this->ports()->addPort("msg", port);
     }
@@ -151,7 +153,7 @@ public:
     }
 
     void updateHook() {
-        port.read(cont_);
+        read_successful_ = (port.read(cont_) == RTT::NewData);
     }
 
     bool connectPorts(RTT::TaskContext* other) {
@@ -165,24 +167,36 @@ public:
         return cont_;
     }
 
+    bool isReadSuccessful() const {
+        return read_successful_;
+    }
+
 private:
     Container cont_;
+
+    bool read_successful_;
 
     RTT::InputPort<Container > port;
 };
 
 void initContainerData(Container& cont_in) {
   cont_in.cont1.sub1.field1 = 1;
+//  cont_in.cont1.sub1.field1_valid = true;
   cont_in.cont1.sub1.field2 = 2;
+//  cont_in.cont1.sub1_valid = true;
   cont_in.cont1.sub2.field1 = 3;
+//  cont_in.cont1.sub2.field1_valid = true;
   cont_in.cont1.sub2.field2 = 4;
   cont_in.cont1.field1 = 5.0;
+//  cont_in.cont1.field1_valid = true;
   cont_in.cont1.field2 = 6.0;
+//  cont_in.cont1_valid = true;
   cont_in.cont2.sub1.field1 = 7;
   cont_in.cont2.sub1.field2 = 8;
   cont_in.cont2.sub2.field1 = 9;
   cont_in.cont2.sub2.field2 = 10;
   cont_in.cont2.field1 = 11.0;
+//  cont_in.cont2.field1_valid = true;
   cont_in.cont2.field2 = 12.0;
   cont_in.cont3.sub1.field1 = 13;
   cont_in.cont3.sub1.field2 = 14;
@@ -190,6 +204,7 @@ void initContainerData(Container& cont_in) {
   cont_in.cont3.sub2.field2 = 16;
   cont_in.cont3.field1 = 17.0;
   cont_in.cont3.field2 = 18.0;
+//  cont_in.cont3_valid = true;
   cont_in.cont4.sub1.field1 = 19;
   cont_in.cont4.sub1.field2 = 21;
   cont_in.cont4.sub1_valid = true;
@@ -198,6 +213,7 @@ void initContainerData(Container& cont_in) {
   cont_in.cont4.field1 = 24.0;
   cont_in.cont4.field2 = 25.0;
   cont_in.field1 = 26;
+//  cont_in.field1_valid = true;
   cont_in.field2 = 27;
 }
 
@@ -239,6 +255,8 @@ TEST(MessageConcateTest, AllValid) {
   test_in.getActivity()->execute();
   concate.getActivity()->execute();
   test_out.getActivity()->execute();
+
+  EXPECT_TRUE(test_out.isReadSuccessful());
 
   // get the result data
   Container cont_out = test_out.getData();
@@ -319,7 +337,7 @@ TEST(MessageConcateTest, InvalidCaughtOnTheSameLevel) {
   TestComponentIn test_in("test_in");
   test_in.setActivity( new RTT::extras::SlaveActivity() );
   std::vector<std::string > not_connected_ports;
-  not_connected_ports.push_back("cont1_sub1_field1");
+  not_connected_ports.push_back("Container_cont1_sub1_field1");
   EXPECT_TRUE( test_in.connectPorts(&concate, not_connected_ports) );
   EXPECT_TRUE( test_in.configure() );
   EXPECT_TRUE( test_in.start() );
@@ -424,7 +442,7 @@ TEST(MessageConcateTest, InvalidCaughtOnHigherLevel) {
   TestComponentIn test_in("test_in");
   test_in.setActivity( new RTT::extras::SlaveActivity() );
   std::vector<std::string > not_connected_ports;
-  not_connected_ports.push_back("cont1_sub1_field2");
+  not_connected_ports.push_back("Container_cont1_sub1_field2");
   EXPECT_TRUE( test_in.connectPorts(&concate, not_connected_ports) );
   EXPECT_TRUE( test_in.configure() );
   EXPECT_TRUE( test_in.start() );
@@ -529,7 +547,7 @@ TEST(MessageConcateTest, InvalidCaughtOnHighestLevel) {
   TestComponentIn test_in("test_in");
   test_in.setActivity( new RTT::extras::SlaveActivity() );
   std::vector<std::string > not_connected_ports;
-  not_connected_ports.push_back("cont2_sub2_field2");
+  not_connected_ports.push_back("Container_cont2_sub2_field2");
   EXPECT_TRUE( test_in.connectPorts(&concate, not_connected_ports) );
   EXPECT_TRUE( test_in.configure() );
   EXPECT_TRUE( test_in.start() );
@@ -632,7 +650,7 @@ TEST(MessageConcateTest, InvalidCaughtOnMiddleLevel) {
   TestComponentIn test_in("test_in");
   test_in.setActivity( new RTT::extras::SlaveActivity() );
   std::vector<std::string > not_connected_ports;
-  not_connected_ports.push_back("cont1_sub2_field2");
+  not_connected_ports.push_back("Container_cont1_sub2_field2");
   EXPECT_TRUE( test_in.connectPorts(&concate, not_connected_ports) );
   EXPECT_TRUE( test_in.configure() );
   EXPECT_TRUE( test_in.start() );

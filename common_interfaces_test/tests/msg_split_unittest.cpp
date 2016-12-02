@@ -26,7 +26,7 @@
 */
 
 #include <limits.h>
-#include "test_ports.h"
+#include "common_interfaces_test_msgs/Container.h"
 #include "common_interfaces/message_split.h"
 #include <rtt/extras/SlaveActivity.hpp>
 
@@ -34,7 +34,7 @@
 
 namespace message_split_tests {
 
-using namespace common_interfaces_test_interface;
+using namespace common_interfaces_test_msgs;
 
 class TestComponentOut : public RTT::TaskContext {
 
@@ -44,22 +44,22 @@ public:
         TaskContext(name, PreOperational),
         cont_()
     {
-        this->ports()->addPort("cont1_sub1_field1", port1);
-        this->ports()->addPort("cont1_sub1_field2", port2);
-        this->ports()->addPort("cont1_sub2_field1", port3);
-        this->ports()->addPort("cont1_sub2_field2", port4);
-        this->ports()->addPort("cont1_field1", port5);
-        this->ports()->addPort("cont1_field2", port6);
-        this->ports()->addPort("cont2_sub1_field1", port7);
-        this->ports()->addPort("cont2_sub1_field2", port8);
-        this->ports()->addPort("cont2_sub2_field1", port9);
-        this->ports()->addPort("cont2_sub2_field2", port10);
-        this->ports()->addPort("cont2_field1", port11);
-        this->ports()->addPort("cont2_field2", port12);
-        this->ports()->addPort("cont3", port13);
-        this->ports()->addPort("cont4", port14);
-        this->ports()->addPort("field1", port15);
-        this->ports()->addPort("field2", port16);
+        this->ports()->addPort("Container_cont1_sub1_field1", port1);
+        this->ports()->addPort("Container_cont1_sub1_field2", port2);
+        this->ports()->addPort("Container_cont1_sub2_field1", port3);
+        this->ports()->addPort("Container_cont1_sub2_field2", port4);
+        this->ports()->addPort("Container_cont1_field1", port5);
+        this->ports()->addPort("Container_cont1_field2", port6);
+        this->ports()->addPort("Container_cont2_sub1_field1", port7);
+        this->ports()->addPort("Container_cont2_sub1_field2", port8);
+        this->ports()->addPort("Container_cont2_sub2_field1", port9);
+        this->ports()->addPort("Container_cont2_sub2_field2", port10);
+        this->ports()->addPort("Container_cont2_field1", port11);
+        this->ports()->addPort("Container_cont2_field2", port12);
+        this->ports()->addPort("Container_cont3", port13);
+        this->ports()->addPort("Container_cont4", port14);
+        this->ports()->addPort("Container_field1", port15);
+        this->ports()->addPort("Container_field2", port16);
     }
 
     bool configureHook() {
@@ -71,7 +71,6 @@ public:
     }
 
     void updateHook() {
-        std::cout << "cont_.cont1.sub1.field2: " << cont_.cont1.sub1.field2 << std::endl;
         status_[port1.getName()] = port1.read(cont_.cont1.sub1.field1);
         status_[port2.getName()] = port2.read(cont_.cont1.sub1.field2);
         status_[port3.getName()] = port3.read(cont_.cont1.sub2.field1);
@@ -88,7 +87,6 @@ public:
         status_[port14.getName()] = port14.read(cont_.cont4);
         status_[port15.getName()] = port15.read(cont_.field1);
         status_[port16.getName()] = port16.read(cont_.field2);
-        std::cout << "cont_.cont1.sub1.field2: " << cont_.cont1.sub1.field2 << "  status: " << status_[port2.getName()] << std::endl;
     }
 
     bool connectPorts(RTT::TaskContext* other, const std::vector<std::string >& not_connected_ports = std::vector<std::string >()) {
@@ -103,7 +101,8 @@ public:
             if (ignore) {
                 continue;
             }
-            if (!ports[i]->connectTo( other->ports()->getPort(ports[i]->getName() + "_OUTPORT") )) {
+            RTT::base::PortInterface* pi = other->ports()->getPort(ports[i]->getName() + "_OUTPORT");
+            if (!pi || !ports[i]->connectTo( pi )) {
                 return false;
             }
         }
@@ -276,22 +275,22 @@ TEST(MessageSplitTest, AllValid) {
   Container cont_out = test_out.getData();
 
   // check data flow status
-  EXPECT_EQ(test_out.getStatus("cont1_sub1_field1"), RTT::NewData);
-  EXPECT_EQ(test_out.getStatus("cont1_sub1_field2"), RTT::NewData);
-  EXPECT_EQ(test_out.getStatus("cont1_sub2_field1"), RTT::NewData);
-  EXPECT_EQ(test_out.getStatus("cont1_sub2_field2"), RTT::NewData);
-  EXPECT_EQ(test_out.getStatus("cont1_field1"), RTT::NewData);
-  EXPECT_EQ(test_out.getStatus("cont1_field2"), RTT::NewData);
-  EXPECT_EQ(test_out.getStatus("cont2_sub1_field1"), RTT::NewData);
-  EXPECT_EQ(test_out.getStatus("cont2_sub1_field2"), RTT::NewData);
-  EXPECT_EQ(test_out.getStatus("cont2_sub2_field1"), RTT::NewData);
-  EXPECT_EQ(test_out.getStatus("cont2_sub2_field2"), RTT::NewData);
-  EXPECT_EQ(test_out.getStatus("cont2_field1"), RTT::NewData);
-  EXPECT_EQ(test_out.getStatus("cont2_field2"), RTT::NewData);
-  EXPECT_EQ(test_out.getStatus("cont3"), RTT::NewData);
-  EXPECT_EQ(test_out.getStatus("cont4"), RTT::NewData);
-  EXPECT_EQ(test_out.getStatus("field1"), RTT::NewData);
-  EXPECT_EQ(test_out.getStatus("field2"), RTT::NewData);
+  EXPECT_EQ(test_out.getStatus("Container_cont1_sub1_field1"), RTT::NewData);
+  EXPECT_EQ(test_out.getStatus("Container_cont1_sub1_field2"), RTT::NewData);
+  EXPECT_EQ(test_out.getStatus("Container_cont1_sub2_field1"), RTT::NewData);
+  EXPECT_EQ(test_out.getStatus("Container_cont1_sub2_field2"), RTT::NewData);
+  EXPECT_EQ(test_out.getStatus("Container_cont1_field1"), RTT::NewData);
+  EXPECT_EQ(test_out.getStatus("Container_cont1_field2"), RTT::NewData);
+  EXPECT_EQ(test_out.getStatus("Container_cont2_sub1_field1"), RTT::NewData);
+  EXPECT_EQ(test_out.getStatus("Container_cont2_sub1_field2"), RTT::NewData);
+  EXPECT_EQ(test_out.getStatus("Container_cont2_sub2_field1"), RTT::NewData);
+  EXPECT_EQ(test_out.getStatus("Container_cont2_sub2_field2"), RTT::NewData);
+  EXPECT_EQ(test_out.getStatus("Container_cont2_field1"), RTT::NewData);
+  EXPECT_EQ(test_out.getStatus("Container_cont2_field2"), RTT::NewData);
+  EXPECT_EQ(test_out.getStatus("Container_cont3"), RTT::NewData);
+  EXPECT_EQ(test_out.getStatus("Container_cont4"), RTT::NewData);
+  EXPECT_EQ(test_out.getStatus("Container_field1"), RTT::NewData);
+  EXPECT_EQ(test_out.getStatus("Container_field2"), RTT::NewData);
 
 
   // check the data
@@ -380,22 +379,22 @@ TEST(MessageSplitTest, AllValidExceptLowest) {
   Container cont_out = test_out.getData();
 
   // check data flow status
-  EXPECT_EQ(test_out.getStatus("cont1_sub1_field1"), RTT::NoData);
-  EXPECT_EQ(test_out.getStatus("cont1_sub1_field2"), RTT::NewData);
-  EXPECT_EQ(test_out.getStatus("cont1_sub2_field1"), RTT::NewData);
-  EXPECT_EQ(test_out.getStatus("cont1_sub2_field2"), RTT::NewData);
-  EXPECT_EQ(test_out.getStatus("cont1_field1"), RTT::NewData);
-  EXPECT_EQ(test_out.getStatus("cont1_field2"), RTT::NewData);
-  EXPECT_EQ(test_out.getStatus("cont2_sub1_field1"), RTT::NewData);
-  EXPECT_EQ(test_out.getStatus("cont2_sub1_field2"), RTT::NewData);
-  EXPECT_EQ(test_out.getStatus("cont2_sub2_field1"), RTT::NewData);
-  EXPECT_EQ(test_out.getStatus("cont2_sub2_field2"), RTT::NewData);
-  EXPECT_EQ(test_out.getStatus("cont2_field1"), RTT::NewData);
-  EXPECT_EQ(test_out.getStatus("cont2_field2"), RTT::NewData);
-  EXPECT_EQ(test_out.getStatus("cont3"), RTT::NewData);
-  EXPECT_EQ(test_out.getStatus("cont4"), RTT::NewData);
-  EXPECT_EQ(test_out.getStatus("field1"), RTT::NewData);
-  EXPECT_EQ(test_out.getStatus("field2"), RTT::NewData);
+  EXPECT_EQ(test_out.getStatus("Container_cont1_sub1_field1"), RTT::NoData);
+  EXPECT_EQ(test_out.getStatus("Container_cont1_sub1_field2"), RTT::NewData);
+  EXPECT_EQ(test_out.getStatus("Container_cont1_sub2_field1"), RTT::NewData);
+  EXPECT_EQ(test_out.getStatus("Container_cont1_sub2_field2"), RTT::NewData);
+  EXPECT_EQ(test_out.getStatus("Container_cont1_field1"), RTT::NewData);
+  EXPECT_EQ(test_out.getStatus("Container_cont1_field2"), RTT::NewData);
+  EXPECT_EQ(test_out.getStatus("Container_cont2_sub1_field1"), RTT::NewData);
+  EXPECT_EQ(test_out.getStatus("Container_cont2_sub1_field2"), RTT::NewData);
+  EXPECT_EQ(test_out.getStatus("Container_cont2_sub2_field1"), RTT::NewData);
+  EXPECT_EQ(test_out.getStatus("Container_cont2_sub2_field2"), RTT::NewData);
+  EXPECT_EQ(test_out.getStatus("Container_cont2_field1"), RTT::NewData);
+  EXPECT_EQ(test_out.getStatus("Container_cont2_field2"), RTT::NewData);
+  EXPECT_EQ(test_out.getStatus("Container_cont3"), RTT::NewData);
+  EXPECT_EQ(test_out.getStatus("Container_cont4"), RTT::NewData);
+  EXPECT_EQ(test_out.getStatus("Container_field1"), RTT::NewData);
+  EXPECT_EQ(test_out.getStatus("Container_field2"), RTT::NewData);
 
 
   // check the data
@@ -486,22 +485,22 @@ TEST(MessageSplitTest, AllValidExceptMiddle) {
   Container cont_out = test_out.getData();
 
   // check data flow status
-  EXPECT_EQ(test_out.getStatus("cont1_sub1_field1"), RTT::NoData);
-  EXPECT_EQ(test_out.getStatus("cont1_sub1_field2"), RTT::NoData);
-  EXPECT_EQ(test_out.getStatus("cont1_sub2_field1"), RTT::NewData);
-  EXPECT_EQ(test_out.getStatus("cont1_sub2_field2"), RTT::NewData);
-  EXPECT_EQ(test_out.getStatus("cont1_field1"), RTT::NewData);
-  EXPECT_EQ(test_out.getStatus("cont1_field2"), RTT::NewData);
-  EXPECT_EQ(test_out.getStatus("cont2_sub1_field1"), RTT::NewData);
-  EXPECT_EQ(test_out.getStatus("cont2_sub1_field2"), RTT::NewData);
-  EXPECT_EQ(test_out.getStatus("cont2_sub2_field1"), RTT::NewData);
-  EXPECT_EQ(test_out.getStatus("cont2_sub2_field2"), RTT::NewData);
-  EXPECT_EQ(test_out.getStatus("cont2_field1"), RTT::NewData);
-  EXPECT_EQ(test_out.getStatus("cont2_field2"), RTT::NewData);
-  EXPECT_EQ(test_out.getStatus("cont3"), RTT::NewData);
-  EXPECT_EQ(test_out.getStatus("cont4"), RTT::NewData);
-  EXPECT_EQ(test_out.getStatus("field1"), RTT::NewData);
-  EXPECT_EQ(test_out.getStatus("field2"), RTT::NewData);
+  EXPECT_EQ(test_out.getStatus("Container_cont1_sub1_field1"), RTT::NoData);
+  EXPECT_EQ(test_out.getStatus("Container_cont1_sub1_field2"), RTT::NoData);
+  EXPECT_EQ(test_out.getStatus("Container_cont1_sub2_field1"), RTT::NewData);
+  EXPECT_EQ(test_out.getStatus("Container_cont1_sub2_field2"), RTT::NewData);
+  EXPECT_EQ(test_out.getStatus("Container_cont1_field1"), RTT::NewData);
+  EXPECT_EQ(test_out.getStatus("Container_cont1_field2"), RTT::NewData);
+  EXPECT_EQ(test_out.getStatus("Container_cont2_sub1_field1"), RTT::NewData);
+  EXPECT_EQ(test_out.getStatus("Container_cont2_sub1_field2"), RTT::NewData);
+  EXPECT_EQ(test_out.getStatus("Container_cont2_sub2_field1"), RTT::NewData);
+  EXPECT_EQ(test_out.getStatus("Container_cont2_sub2_field2"), RTT::NewData);
+  EXPECT_EQ(test_out.getStatus("Container_cont2_field1"), RTT::NewData);
+  EXPECT_EQ(test_out.getStatus("Container_cont2_field2"), RTT::NewData);
+  EXPECT_EQ(test_out.getStatus("Container_cont3"), RTT::NewData);
+  EXPECT_EQ(test_out.getStatus("Container_cont4"), RTT::NewData);
+  EXPECT_EQ(test_out.getStatus("Container_field1"), RTT::NewData);
+  EXPECT_EQ(test_out.getStatus("Container_field2"), RTT::NewData);
 
 
   // check the data
@@ -592,22 +591,22 @@ TEST(MessageSplitTest, AllValidExceptHigh) {
   Container cont_out = test_out.getData();
 
   // check data flow status
-  EXPECT_EQ(test_out.getStatus("cont1_sub1_field1"), RTT::NoData);
-  EXPECT_EQ(test_out.getStatus("cont1_sub1_field2"), RTT::NoData);
-  EXPECT_EQ(test_out.getStatus("cont1_sub2_field1"), RTT::NoData);
-  EXPECT_EQ(test_out.getStatus("cont1_sub2_field2"), RTT::NoData);
-  EXPECT_EQ(test_out.getStatus("cont1_field1"), RTT::NoData);
-  EXPECT_EQ(test_out.getStatus("cont1_field2"), RTT::NoData);
-  EXPECT_EQ(test_out.getStatus("cont2_sub1_field1"), RTT::NewData);
-  EXPECT_EQ(test_out.getStatus("cont2_sub1_field2"), RTT::NewData);
-  EXPECT_EQ(test_out.getStatus("cont2_sub2_field1"), RTT::NewData);
-  EXPECT_EQ(test_out.getStatus("cont2_sub2_field2"), RTT::NewData);
-  EXPECT_EQ(test_out.getStatus("cont2_field1"), RTT::NewData);
-  EXPECT_EQ(test_out.getStatus("cont2_field2"), RTT::NewData);
-  EXPECT_EQ(test_out.getStatus("cont3"), RTT::NewData);
-  EXPECT_EQ(test_out.getStatus("cont4"), RTT::NewData);
-  EXPECT_EQ(test_out.getStatus("field1"), RTT::NewData);
-  EXPECT_EQ(test_out.getStatus("field2"), RTT::NewData);
+  EXPECT_EQ(test_out.getStatus("Container_cont1_sub1_field1"), RTT::NoData);
+  EXPECT_EQ(test_out.getStatus("Container_cont1_sub1_field2"), RTT::NoData);
+  EXPECT_EQ(test_out.getStatus("Container_cont1_sub2_field1"), RTT::NoData);
+  EXPECT_EQ(test_out.getStatus("Container_cont1_sub2_field2"), RTT::NoData);
+  EXPECT_EQ(test_out.getStatus("Container_cont1_field1"), RTT::NoData);
+  EXPECT_EQ(test_out.getStatus("Container_cont1_field2"), RTT::NoData);
+  EXPECT_EQ(test_out.getStatus("Container_cont2_sub1_field1"), RTT::NewData);
+  EXPECT_EQ(test_out.getStatus("Container_cont2_sub1_field2"), RTT::NewData);
+  EXPECT_EQ(test_out.getStatus("Container_cont2_sub2_field1"), RTT::NewData);
+  EXPECT_EQ(test_out.getStatus("Container_cont2_sub2_field2"), RTT::NewData);
+  EXPECT_EQ(test_out.getStatus("Container_cont2_field1"), RTT::NewData);
+  EXPECT_EQ(test_out.getStatus("Container_cont2_field2"), RTT::NewData);
+  EXPECT_EQ(test_out.getStatus("Container_cont3"), RTT::NewData);
+  EXPECT_EQ(test_out.getStatus("Container_cont4"), RTT::NewData);
+  EXPECT_EQ(test_out.getStatus("Container_field1"), RTT::NewData);
+  EXPECT_EQ(test_out.getStatus("Container_field2"), RTT::NewData);
 
   // check the data
   // TODO: due to bug https://github.com/orocos-toolchain/rtt/issues/177
