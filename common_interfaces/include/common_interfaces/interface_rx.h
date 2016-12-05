@@ -81,6 +81,7 @@ public:
             return false;
         }
 
+        Logger::log() << Logger::Info << "parameter channel_name is set to: \'" << param_channel_name_ << "\'" << Logger::endl;
         Logger::log() << Logger::Info << "parameter event_port is set to: " << (event_port_?"true":"false") << Logger::endl;
         Logger::log() << Logger::Info << "parameter always_update_peers is set to: " << (always_update_peers_?"true":"false") << Logger::endl;
 
@@ -110,8 +111,8 @@ public:
             return false;
         }
         else if (result == SHM_ERR_CREATE) {
-            Logger::log() << Logger::Error << "shm_connect_reader: could not create reader" << Logger::endl;
-            return false;
+            Logger::log() << Logger::Warning << "shm_connect_reader: could not create reader" << Logger::endl;
+            create_channel = true;
         }
 
         if (create_channel) {
