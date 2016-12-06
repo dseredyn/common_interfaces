@@ -69,7 +69,7 @@ public:
                           << Logger::endl;
             return false;
         }
-        peer_list_.push_back(peer_name);
+//        peer_list_.push_back(peer_name);
         return true;
     }
 
@@ -129,7 +129,7 @@ public:
             }
         }
 
-
+/*
 
         TaskContext::PeerList l = this->getPeerList();
         if (peer_list_.size() != l.size()) {
@@ -166,7 +166,7 @@ public:
             }
             triggerOnStart.set(false);
         }
-
+*/
         mTriggerOnStart = false;
 
         return true;
@@ -252,6 +252,7 @@ public:
             }
         }
 */
+/*
         if (always_update_peers_ || buffer_valid) {
             for (std::list<TaskContext* >::iterator it = peers_.begin(); it != peers_.end(); ++it) {
                 if (!(*it)->update()) {
@@ -261,7 +262,7 @@ public:
                 }
             }
         }
-
+*/
         if (event_port_) {
             trigger();
         }
@@ -282,8 +283,8 @@ private:
 
     RTT::OutputPort<Container > port_msg_out_;
 
-    std::list<std::string > peer_list_;
-    std::list<TaskContext* > peers_;
+//    std::list<std::string > peer_list_;
+//    std::list<TaskContext* > peers_;
 };
 
 
