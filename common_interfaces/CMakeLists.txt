@@ -6,7 +6,6 @@ project(common_interfaces)
 find_package(catkin REQUIRED COMPONENTS
   rtt_ros
   shm_comm
-  common_services
   )
 
 include_directories(${catkin_INCLUDE_DIRS} include)
