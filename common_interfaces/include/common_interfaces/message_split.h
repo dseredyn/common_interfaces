@@ -47,6 +47,17 @@ public:
         port_msg_in_("msg_INPORT")
     {
         this->ports()->addPort(port_msg_in_);
+        this->addOperation("getDiag", &MessageSplit::getDiag, this, RTT::ClientThread);
+    }
+
+    std::string getDiag() {
+    // this method may not be RT-safe
+        if (diag_buf_valid_) {
+            std::stringstream ss;
+            ros::message_operations::Printer<Container >::stream(ss, "", diag_buf_);
+            return ss.str();
+        }
+        return "<no data>";
     }
 
     bool configureHook() {
@@ -61,6 +72,8 @@ public:
         if (port_msg_in_.read(msg_) == RTT::NewData) {
             out_.convertFromROS(msg_);
             out_.writePorts();
+            diag_buf_ = msg_;
+            diag_buf_valid_ = true;
         }
     }
 
@@ -70,6 +83,9 @@ private:
 
     typename InterfaceOutport::Container_ msg_;
     RTT::InputPort<typename InterfaceOutport::Container_ > port_msg_in_;
+
+    Container diag_buf_;
+    bool diag_buf_valid_;
 };
 
 

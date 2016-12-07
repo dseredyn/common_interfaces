@@ -59,7 +59,6 @@ public:
         std::stringstream ss;
         ros::message_operations::Printer<Container >::stream(ss, "", diag_buf_);
         return ss.str();
-//        return "";
     }
 
     bool configureHook() {

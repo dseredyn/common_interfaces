@@ -49,6 +49,13 @@ public:
     {
         this->ports()->addPort(port_msg_out_);
         this->ports()->addPort(port_msg_in_);
+        this->addOperation("getDiag", &MessageConcate::getDiag, this, RTT::ClientThread);
+    }
+
+    std::string getDiag() {
+        std::stringstream ss;
+        ros::message_operations::Printer<Container >::stream(ss, "", diag_buf_);
+        return ss.str();
     }
 
     bool configureHook() {
@@ -65,6 +72,7 @@ public:
             in_.convertToROS(msg_);
         }
         port_msg_out_.write(msg_);
+        diag_buf_ = msg_;
     }
 
 private:
@@ -74,6 +82,9 @@ private:
 
     typename InterfaceInport::Container_ msg_;
     RTT::OutputPort<typename InterfaceInport::Container_ > port_msg_out_;
+
+    Container diag_buf_;
+    bool diag_buf_valid_;
 };
 
 
