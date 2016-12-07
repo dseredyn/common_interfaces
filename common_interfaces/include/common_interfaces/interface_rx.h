@@ -57,9 +57,25 @@ public:
         this->addOperation("pushBackPeerExecution", &InterfaceRx::pushBackPeerExecution, this, RTT::ClientThread)
             .doc("enable HW operation");
 
+        this->addOperation("getDiag", &InterfaceRx::getDiag, this, RTT::ClientThread);
+
         addProperty("channel_name", param_channel_name_);
         addProperty("event_port", event_port_);
         addProperty("always_update_peers", always_update_peers_);
+    }
+
+    std::string getDiag() {
+    // this method may not be RT-safe
+/*<c n="lArm">
+  <c n="aaa">
+    <f n="f1" v="">
+  </c>
+</c>
+*/
+        std::stringstream ss;
+
+        ros::message_operations::Printer<Container >::stream(ss, "", diag_buf_);
+        return "TODO";//ss.str();
     }
 
     bool pushBackPeerExecution(const std::string &peer_name) {
@@ -221,6 +237,7 @@ public:
                 // save the pointer of buffer
                 buf_prev_ = buf;
 
+                diag_buf_ = *buf;
                 // write received data to RTT port
                 port_msg_out_.write(*buf);
 
@@ -282,6 +299,8 @@ private:
     bool receiving_data_;
 
     RTT::OutputPort<Container > port_msg_out_;
+
+    Container diag_buf_;
 
 //    std::list<std::string > peer_list_;
 //    std::list<TaskContext* > peers_;
