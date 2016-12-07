@@ -72,10 +72,12 @@ public:
   </c>
 </c>
 */
-        std::stringstream ss;
-
-        ros::message_operations::Printer<Container >::stream(ss, "", diag_buf_);
-        return "TODO";//ss.str();
+        if (diag_buf_valid_) {
+            std::stringstream ss;
+            ros::message_operations::Printer<Container >::stream(ss, "", diag_buf_);
+            return ss.str();
+        }
+        return "<no data>";
     }
 
     bool pushBackPeerExecution(const std::string &peer_name) {
@@ -238,6 +240,7 @@ public:
                 buf_prev_ = buf;
 
                 diag_buf_ = *buf;
+                diag_buf_valid_ = true;
                 // write received data to RTT port
                 port_msg_out_.write(*buf);
 
@@ -245,6 +248,7 @@ public:
         }
         else {
             receiving_data_ = false;
+            diag_buf_valid_ = false;
         }
 
 /*
@@ -301,6 +305,7 @@ private:
     RTT::OutputPort<Container > port_msg_out_;
 
     Container diag_buf_;
+    bool diag_buf_valid_;
 
 //    std::list<std::string > peer_list_;
 //    std::list<TaskContext* > peers_;

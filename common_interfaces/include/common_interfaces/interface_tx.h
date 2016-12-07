@@ -56,7 +56,10 @@ public:
     }
 
     std::string getDiag() {
-        return "";
+        std::stringstream ss;
+        ros::message_operations::Printer<Container >::stream(ss, "", diag_buf_);
+        return ss.str();
+//        return "";
     }
 
     bool configureHook() {
@@ -136,6 +139,7 @@ public:
 
     void updateHook() {
         if (port_msg_in_.read(cmd_out_) == RTT::NewData) {
+            diag_buf_ = cmd_out_;
             if (buf_ == NULL) {
                 Logger::In in("InterfaceTx::updateHook");
                 Logger::log() << Logger::Error << "writer get NULL buffer" << Logger::endl;
@@ -164,6 +168,7 @@ private:
 
     Container cmd_out_;
     Container* buf_;
+    Container diag_buf_;
 };
 
 #endif  // INTERFACE_TX_H__
