@@ -44,9 +44,11 @@ public:
     explicit MessageConcate(const std::string& name) :
         TaskContext(name, PreOperational),
         in_(*this),
-        port_msg_out_("msg_OUTPORT")
+        port_msg_out_("msg_OUTPORT"),
+        port_msg_in_("msg_INPORT")
     {
         this->ports()->addPort(port_msg_out_);
+        this->ports()->addPort(port_msg_in_);
     }
 
     bool configureHook() {
@@ -58,13 +60,16 @@ public:
     }
 
     void updateHook() {
-        in_.readPorts();
-        in_.convertToROS(msg_);
+        if (port_msg_in_.read(msg_) != RTT::NewData) {
+            in_.readPorts();
+            in_.convertToROS(msg_);
+        }
         port_msg_out_.write(msg_);
     }
 
 private:
 
+    RTT::InputPort<typename InterfaceInport::Container_ > port_msg_in_;
     InterfaceInport in_;
 
     typename InterfaceInport::Container_ msg_;
