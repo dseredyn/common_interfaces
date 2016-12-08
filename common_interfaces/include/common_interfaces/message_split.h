@@ -40,6 +40,7 @@ template <template <template <typename Type> class RTTport> class Interface>
 class MessageSplit: public RTT::TaskContext {
 public:
     typedef Interface<RTT::OutputPort > InterfaceOutport;
+    typedef typename InterfaceOutport::Container_ Container;
 
     explicit MessageSplit(const std::string& name) :
         TaskContext(name, PreOperational),
@@ -53,9 +54,10 @@ public:
     std::string getDiag() {
     // this method may not be RT-safe
         if (diag_buf_valid_) {
-            std::stringstream ss;
-            ros::message_operations::Printer<Container >::stream(ss, "", diag_buf_);
-            return ss.str();
+            //std::stringstream ss;
+            //ros::message_operations::Printer<Container >::stream(ss, "", diag_buf_);
+            //return ss.str();
+            return "<data ok>";
         }
         return "<no data>";
     }
@@ -75,14 +77,17 @@ public:
             diag_buf_ = msg_;
             diag_buf_valid_ = true;
         }
+        else {
+            diag_buf_valid_ = false;
+        }
     }
 
 private:
 
     InterfaceOutport out_;
 
-    typename InterfaceOutport::Container_ msg_;
-    RTT::InputPort<typename InterfaceOutport::Container_ > port_msg_in_;
+    Container msg_;
+    RTT::InputPort<Container > port_msg_in_;
 
     Container diag_buf_;
     bool diag_buf_valid_;

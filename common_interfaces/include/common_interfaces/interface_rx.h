@@ -73,9 +73,10 @@ public:
 </c>
 */
         if (diag_buf_valid_) {
-            std::stringstream ss;
-            ros::message_operations::Printer<Container >::stream(ss, "", diag_buf_);
-            return ss.str();
+            //std::stringstream ss;
+            //ros::message_operations::Printer<Container >::stream(ss, "", diag_buf_);
+            //return ss.str();
+            return "<data ok>";
         }
         return "<no data>";
     }
@@ -130,6 +131,13 @@ public:
         }
         else if (result == SHM_ERR_CREATE) {
             Logger::log() << Logger::Warning << "shm_connect_reader: could not create reader" << Logger::endl;
+            create_channel = true;
+        }
+
+        void *pbuf = NULL;
+        result = shm_reader_buffer_get(re_, &pbuf);
+        if (result < 0) {
+            Logger::log() << Logger::Warning << "shm_reader_buffer_get: error: " << result << Logger::endl;
             create_channel = true;
         }
 
@@ -199,12 +207,16 @@ public:
 
         int result = shm_reader_buffer_get(re_, &pbuf);
         if (result < 0) {
+            Logger::log() << Logger::Error << "shm_reader_buffer_get: error: " << result << Logger::endl;
             return false;
         }
 
         buf_prev_ = reinterpret_cast<Container*>( pbuf );
 
         receiving_data_ = false;
+
+        diag_buf_valid_ = false;
+        diag_buf_ = Container();
 
         if (event_port_) {
             trigger();
@@ -219,15 +231,16 @@ public:
         Container *buf = NULL;
 
         bool buffer_valid = false;
-        if (receiving_data_) {
+
+//        if (receiving_data_) {
             timespec ts;
             clock_gettime(CLOCK_REALTIME, &ts);
             ts.tv_sec += 1;
             buffer_valid = (shm_reader_buffer_timedwait(re_, &ts, &pbuf) == 0);
-        }
-        else {
-            buffer_valid = (shm_reader_buffer_get(re_, &pbuf) == 0);
-        }
+//        }
+//        else {
+//            buffer_valid = (shm_reader_buffer_get(re_, &pbuf) == 0);
+//        }
 
     /*/
         Container *buf = reinterpret_cast<Container*>( reader_buffer_get(&re_) );
@@ -249,6 +262,10 @@ public:
         else {
             receiving_data_ = false;
             diag_buf_valid_ = false;
+//            if (publish_invalid_data_) {
+//                Container data_inv_;
+//                port_msg_out_.write(data_inv_);
+//            }
         }
 
 /*
@@ -306,6 +323,8 @@ private:
 
     Container diag_buf_;
     bool diag_buf_valid_;
+
+//    bool publish_invalid_data_;
 
 //    std::list<std::string > peer_list_;
 //    std::list<TaskContext* > peers_;

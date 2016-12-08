@@ -40,6 +40,7 @@ template <template <template <typename Type> class RTTport> class Interface>
 class MessageConcate: public RTT::TaskContext {
 public:
     typedef Interface<RTT::InputPort > InterfaceInport;
+    typedef typename InterfaceInport::Container_ Container;
 
     explicit MessageConcate(const std::string& name) :
         TaskContext(name, PreOperational),
@@ -53,9 +54,13 @@ public:
     }
 
     std::string getDiag() {
-        std::stringstream ss;
-        ros::message_operations::Printer<Container >::stream(ss, "", diag_buf_);
-        return ss.str();
+        if (diag_buf_valid_) {
+            //std::stringstream ss;
+            //ros::message_operations::Printer<Container >::stream(ss, "", diag_buf_);
+            //return ss.str();
+            return "<data ok>";
+        }
+        return "<no obligatory data>";
     }
 
     bool configureHook() {
@@ -67,21 +72,29 @@ public:
     }
 
     void updateHook() {
+        bool read_successful = false;
         if (port_msg_in_.read(msg_) != RTT::NewData) {
-            in_.readPorts();
+            read_successful = in_.readPorts();
             in_.convertToROS(msg_);
         }
-        port_msg_out_.write(msg_);
-        diag_buf_ = msg_;
+        else {
+            read_successful = true;
+        }
+
+        if (read_successful) {
+            port_msg_out_.write(msg_);
+            diag_buf_ = msg_;
+        }
+        diag_buf_valid_ = read_successful;
     }
 
 private:
 
-    RTT::InputPort<typename InterfaceInport::Container_ > port_msg_in_;
+    RTT::InputPort<Container > port_msg_in_;
     InterfaceInport in_;
 
-    typename InterfaceInport::Container_ msg_;
-    RTT::OutputPort<typename InterfaceInport::Container_ > port_msg_out_;
+    Container msg_;
+    RTT::OutputPort<Container > port_msg_out_;
 
     Container diag_buf_;
     bool diag_buf_valid_;

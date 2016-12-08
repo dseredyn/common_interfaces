@@ -228,7 +228,7 @@ TEST(MessageConcateTest, AllValid) {
   concate.setActivity( new RTT::extras::SlaveActivity() );
   EXPECT_TRUE( concate.configure() );
   EXPECT_TRUE( concate.start() );
-  EXPECT_EQ( concate.ports()->getPortNames().size(), 17);
+  EXPECT_EQ( concate.ports()->getPortNames().size(), 18);
 
   // component that writes data on input ports of the component under test
   TestComponentIn test_in("test_in");
@@ -331,7 +331,7 @@ TEST(MessageConcateTest, InvalidCaughtOnTheSameLevel) {
   concate.setActivity( new RTT::extras::SlaveActivity() );
   EXPECT_TRUE( concate.configure() );
   EXPECT_TRUE( concate.start() );
-  EXPECT_EQ( concate.ports()->getPortNames().size(), 17);
+  EXPECT_EQ( concate.ports()->getPortNames().size(), 18);
 
   // component that writes data on input ports of the component under test
   TestComponentIn test_in("test_in");
@@ -436,7 +436,7 @@ TEST(MessageConcateTest, InvalidCaughtOnHigherLevel) {
   concate.setActivity( new RTT::extras::SlaveActivity() );
   EXPECT_TRUE( concate.configure() );
   EXPECT_TRUE( concate.start() );
-  EXPECT_EQ( concate.ports()->getPortNames().size(), 17);
+  EXPECT_EQ( concate.ports()->getPortNames().size(), 18);
 
   // component that writes data on input ports of the component under test
   TestComponentIn test_in("test_in");
@@ -541,7 +541,7 @@ TEST(MessageConcateTest, InvalidCaughtOnHighestLevel) {
   concate.setActivity( new RTT::extras::SlaveActivity() );
   EXPECT_TRUE( concate.configure() );
   EXPECT_TRUE( concate.start() );
-  EXPECT_EQ( concate.ports()->getPortNames().size(), 17);
+  EXPECT_EQ( concate.ports()->getPortNames().size(), 18);
 
   // component that writes data on input ports of the component under test
   TestComponentIn test_in("test_in");
@@ -644,7 +644,7 @@ TEST(MessageConcateTest, InvalidCaughtOnMiddleLevel) {
   concate.setActivity( new RTT::extras::SlaveActivity() );
   EXPECT_TRUE( concate.configure() );
   EXPECT_TRUE( concate.start() );
-  EXPECT_EQ( concate.ports()->getPortNames().size(), 17);
+  EXPECT_EQ( concate.ports()->getPortNames().size(), 18);
 
   // component that writes data on input ports of the component under test
   TestComponentIn test_in("test_in");
