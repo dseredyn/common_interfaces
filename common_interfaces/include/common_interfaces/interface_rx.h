@@ -134,11 +134,13 @@ public:
             create_channel = true;
         }
 
-        void *pbuf = NULL;
-        result = shm_reader_buffer_get(re_, &pbuf);
-        if (result < 0) {
-            Logger::log() << Logger::Warning << "shm_reader_buffer_get: error: " << result << Logger::endl;
-            create_channel = true;
+        if (!create_channel) {
+            void *pbuf = NULL;
+            result = shm_reader_buffer_get(re_, &pbuf);
+            if (result < 0) {
+                Logger::log() << Logger::Warning << "shm_reader_buffer_get: error: " << result << Logger::endl;
+                create_channel = true;
+            }
         }
 
         if (create_channel) {
