@@ -50,9 +50,9 @@ public:
         shm_name_("TODO"),
         buf_prev_(NULL),
         event_port_(false),
-        always_update_peers_(false)
+        port_msg_out_("msg_OUTPORT", false)
     {
-        this->ports()->addPort("msg_OUTPORT", port_msg_out_);
+        this->ports()->addPort(port_msg_out_);
 
         this->addOperation("pushBackPeerExecution", &InterfaceRx::pushBackPeerExecution, this, RTT::ClientThread)
             .doc("enable HW operation");
@@ -61,17 +61,10 @@ public:
 
         addProperty("channel_name", param_channel_name_);
         addProperty("event_port", event_port_);
-        addProperty("always_update_peers", always_update_peers_);
     }
 
     std::string getDiag() {
     // this method may not be RT-safe
-/*<c n="lArm">
-  <c n="aaa">
-    <f n="f1" v="">
-  </c>
-</c>
-*/
         if (diag_buf_valid_) {
             //std::stringstream ss;
             //ros::message_operations::Printer<Container >::stream(ss, "", diag_buf_);
@@ -88,7 +81,6 @@ public:
                           << Logger::endl;
             return false;
         }
-//        peer_list_.push_back(peer_name);
         return true;
     }
 
@@ -102,7 +94,6 @@ public:
 
         Logger::log() << Logger::Info << "parameter channel_name is set to: \'" << param_channel_name_ << "\'" << Logger::endl;
         Logger::log() << Logger::Info << "parameter event_port is set to: " << (event_port_?"true":"false") << Logger::endl;
-        Logger::log() << Logger::Info << "parameter always_update_peers is set to: " << (always_update_peers_?"true":"false") << Logger::endl;
 
         shm_name_ = param_channel_name_;
 
@@ -157,44 +148,6 @@ public:
             }
         }
 
-/*
-
-        TaskContext::PeerList l = this->getPeerList();
-        if (peer_list_.size() != l.size()) {
-            Logger::log() << Logger::Error << "peer_list_.size() != l.size()   "
-                          << peer_list_.size() << " != " << l.size() << Logger::endl;
-            return false;
-        }
-
-        for (std::list<std::string >::const_iterator it2 = peer_list_.begin(); it2 != peer_list_.end(); ++it2) {
-            TaskContext *tc = NULL;
-            bool found = false;
-            for (TaskContext::PeerList::const_iterator it = l.begin(); it != l.end(); ++it) {
-                if ( (*it) == (*it2)) {
-                    tc = this->getPeer( (*it) );
-                    break;
-                }
-            }
-            if (tc == NULL) {
-                Logger::log() << Logger::Error << "could not find peer "
-                              << (*it2) << " in peer execution list" << Logger::endl;
-                return false;
-            }
-            peers_.push_back(tc);
-        }
-
-        for (std::list<TaskContext* >::iterator it = peers_.begin(); it != peers_.end(); ++it) {
-            (*it)->setActivity( new RTT::extras::SlaveActivity(this->getActivity(), (*it)->engine()));
-
-            Attribute<bool> triggerOnStart = (*it)->attributes()->getAttribute("TriggerOnStart");
-            if (!triggerOnStart.ready()) {
-                Logger::log() << Logger::Error << "attribute TriggerOnStart of peer "
-                              << (*it)->getName() << " is not ready" << Logger::endl;
-                return false;
-            }
-            triggerOnStart.set(false);
-        }
-*/
         mTriggerOnStart = false;
 
         return true;
@@ -234,15 +187,10 @@ public:
 
         bool buffer_valid = false;
 
-//        if (receiving_data_) {
-            timespec ts;
-            clock_gettime(CLOCK_REALTIME, &ts);
-            ts.tv_sec += 1;
-            buffer_valid = (shm_reader_buffer_timedwait(re_, &ts, &pbuf) == 0);
-//        }
-//        else {
-//            buffer_valid = (shm_reader_buffer_get(re_, &pbuf) == 0);
-//        }
+        timespec ts;
+        clock_gettime(CLOCK_REALTIME, &ts);
+        ++ts.tv_sec;
+        buffer_valid = (shm_reader_buffer_timedwait(re_, &ts, &pbuf) == 0);
 
     /*/
         Container *buf = reinterpret_cast<Container*>( reader_buffer_get(&re_) );
@@ -264,45 +212,8 @@ public:
         else {
             receiving_data_ = false;
             diag_buf_valid_ = false;
-//            if (publish_invalid_data_) {
-//                Container data_inv_;
-//                port_msg_out_.write(data_inv_);
-//            }
         }
 
-/*
-        if (!buffer_valid) {
-    //        Logger::In in("InterfaceRx::updateHook");
-    //        Logger::log() << Logger::Debug << "could not receive data (NULL buffer)" << Logger::endl;
-            receiving_data_ = false;
-        }
-        else {
-            buf = reinterpret_cast<Container*>( pbuf );
-            if (buf != buf_prev_) {
-                buf_prev_ = buf;
-                port_msg_out_.write(*buf);
-
-                out_.convertFromROS(*buf);
-//                out_.setValid(true);
-                out_.writePorts();
-                receiving_data_ = true;
-            }
-            else {
-                receiving_data_ = false;
-            }
-        }
-*/
-/*
-        if (always_update_peers_ || buffer_valid) {
-            for (std::list<TaskContext* >::iterator it = peers_.begin(); it != peers_.end(); ++it) {
-                if (!(*it)->update()) {
-                    Logger::In in("InterfaceRx::updateHook");
-                    Logger::log() << Logger::Error << (*it)->getName() << "->update() has failed" << Logger::endl;
-                    error();
-                }
-            }
-        }
-*/
         if (event_port_) {
             trigger();
         }
@@ -313,7 +224,6 @@ private:
     // properties
     std::string param_channel_name_;
     bool event_port_;
-    bool always_update_peers_;
     
     std::string shm_name_;
 
@@ -325,11 +235,6 @@ private:
 
     Container diag_buf_;
     bool diag_buf_valid_;
-
-//    bool publish_invalid_data_;
-
-//    std::list<std::string > peer_list_;
-//    std::list<TaskContext* > peers_;
 };
 
 
