@@ -27,10 +27,11 @@
 
 #include <limits.h>
 #include "common_interfaces_test_msgs/Container.h"
-#include "common_interfaces/message_split.h"
 #include <rtt/extras/SlaveActivity.hpp>
 
 #include "gtest/gtest.h"
+
+#include "test_deployer.h"
 
 namespace message_split_tests {
 
@@ -238,24 +239,30 @@ void initContainerData(Container& cont_in) {
 // Tests MessageSplit class for data valid on all input ports.
 TEST(MessageSplitTest, AllValid) {
 
+  message_tests::TestDeployer& d = message_tests::TestDeployer::Instance();
+
+  EXPECT_TRUE( d.getDc()->import("rtt_common_interfaces_test_subsystem_ports") );
+  EXPECT_TRUE(d.getDc()->loadComponent("split", "common_interfaces_test_msgs_ContainerSplit"));
+  RTT::TaskContext *split = d.getDc()->getPeer("split");
+  EXPECT_TRUE(split != NULL);
+
   // the component under test
-  MessageSplit<Container_Ports > split("split");
-  split.setActivity( new RTT::extras::SlaveActivity() );
-  EXPECT_TRUE( split.configure() );
-  EXPECT_TRUE( split.start() );
-  EXPECT_EQ( split.ports()->getPortNames().size(), 17);
+  split->setActivity( new RTT::extras::SlaveActivity() );
+  EXPECT_TRUE( split->configure() );
+  EXPECT_TRUE( split->start() );
+  EXPECT_EQ( split->ports()->getPortNames().size(), 17);
 
   // component that writes data on input ports of the component under test
   TestComponentIn test_in("test_in");
   test_in.setActivity( new RTT::extras::SlaveActivity() );
-  EXPECT_TRUE( test_in.connectPorts(&split) );
+  EXPECT_TRUE( test_in.connectPorts(split) );
   EXPECT_TRUE( test_in.configure() );
   EXPECT_TRUE( test_in.start() );
 
   // component that reads data from output port of the component under test
   TestComponentOut test_out("test_out");
   test_out.setActivity( new RTT::extras::SlaveActivity() );
-  EXPECT_TRUE( test_out.connectPorts(&split) );
+  EXPECT_TRUE( test_out.connectPorts(split) );
   EXPECT_TRUE( test_out.configure() );
   EXPECT_TRUE( test_out.start() );
 
@@ -268,7 +275,7 @@ TEST(MessageSplitTest, AllValid) {
 
   // execute all components
   test_in.getActivity()->execute();
-  split.getActivity()->execute();
+  split->getActivity()->execute();
   test_out.getActivity()->execute();
 
   // get the result data
@@ -333,32 +340,39 @@ TEST(MessageSplitTest, AllValid) {
   test_out.stop();
   test_out.cleanup();
 
-  split.stop();
-  split.cleanup();
-}
+  split->stop();
+  split->cleanup();
 
+  d.getDc()->kickOutAll();
+}
 
 // Tests MessageSplit class for data valid on some input ports.
 TEST(MessageSplitTest, AllValidExceptLowest) {
 
+  message_tests::TestDeployer& d = message_tests::TestDeployer::Instance();
+
+  EXPECT_TRUE( d.getDc()->import("rtt_common_interfaces_test_subsystem_ports") );
+  EXPECT_TRUE(d.getDc()->loadComponent("split", "common_interfaces_test_msgs_ContainerSplit"));
+  RTT::TaskContext *split = d.getDc()->getPeer("split");
+  EXPECT_TRUE(split != NULL);
+
   // the component under test
-  MessageSplit<Container_Ports > split("split");
-  split.setActivity( new RTT::extras::SlaveActivity() );
-  EXPECT_TRUE( split.configure() );
-  EXPECT_TRUE( split.start() );
-  EXPECT_EQ( split.ports()->getPortNames().size(), 17);
+  split->setActivity( new RTT::extras::SlaveActivity() );
+  EXPECT_TRUE( split->configure() );
+  EXPECT_TRUE( split->start() );
+  EXPECT_EQ( split->ports()->getPortNames().size(), 17);
 
   // component that writes data on input ports of the component under test
   TestComponentIn test_in("test_in");
   test_in.setActivity( new RTT::extras::SlaveActivity() );
-  EXPECT_TRUE( test_in.connectPorts(&split) );
+  EXPECT_TRUE( test_in.connectPorts(split) );
   EXPECT_TRUE( test_in.configure() );
   EXPECT_TRUE( test_in.start() );
 
   // component that reads data from output port of the component under test
   TestComponentOut test_out("test_out");
   test_out.setActivity( new RTT::extras::SlaveActivity() );
-  EXPECT_TRUE( test_out.connectPorts(&split) );
+  EXPECT_TRUE( test_out.connectPorts(split) );
   EXPECT_TRUE( test_out.configure() );
   EXPECT_TRUE( test_out.start() );
 
@@ -372,7 +386,7 @@ TEST(MessageSplitTest, AllValidExceptLowest) {
 
   // execute all components
   test_in.getActivity()->execute();
-  split.getActivity()->execute();
+  split->getActivity()->execute();
   test_out.getActivity()->execute();
 
   // get the result data
@@ -440,31 +454,39 @@ TEST(MessageSplitTest, AllValidExceptLowest) {
   test_out.stop();
   test_out.cleanup();
 
-  split.stop();
-  split.cleanup();
+  split->stop();
+  split->cleanup();
+
+  d.getDc()->kickOutAll();
 }
 
 // Tests MessageSplit class for data valid on some input ports.
 TEST(MessageSplitTest, AllValidExceptMiddle) {
 
+  message_tests::TestDeployer& d = message_tests::TestDeployer::Instance();
+
+  EXPECT_TRUE( d.getDc()->import("rtt_common_interfaces_test_subsystem_ports") );
+  EXPECT_TRUE(d.getDc()->loadComponent("split", "common_interfaces_test_msgs_ContainerSplit"));
+  RTT::TaskContext *split = d.getDc()->getPeer("split");
+  EXPECT_TRUE(split != NULL);
+
   // the component under test
-  MessageSplit<Container_Ports > split("split");
-  split.setActivity( new RTT::extras::SlaveActivity() );
-  EXPECT_TRUE( split.configure() );
-  EXPECT_TRUE( split.start() );
-  EXPECT_EQ( split.ports()->getPortNames().size(), 17);
+  split->setActivity( new RTT::extras::SlaveActivity() );
+  EXPECT_TRUE( split->configure() );
+  EXPECT_TRUE( split->start() );
+  EXPECT_EQ( split->ports()->getPortNames().size(), 17);
 
   // component that writes data on input ports of the component under test
   TestComponentIn test_in("test_in");
   test_in.setActivity( new RTT::extras::SlaveActivity() );
-  EXPECT_TRUE( test_in.connectPorts(&split) );
+  EXPECT_TRUE( test_in.connectPorts(split) );
   EXPECT_TRUE( test_in.configure() );
   EXPECT_TRUE( test_in.start() );
 
   // component that reads data from output port of the component under test
   TestComponentOut test_out("test_out");
   test_out.setActivity( new RTT::extras::SlaveActivity() );
-  EXPECT_TRUE( test_out.connectPorts(&split) );
+  EXPECT_TRUE( test_out.connectPorts(split) );
   EXPECT_TRUE( test_out.configure() );
   EXPECT_TRUE( test_out.start() );
 
@@ -478,7 +500,7 @@ TEST(MessageSplitTest, AllValidExceptMiddle) {
 
   // execute all components
   test_in.getActivity()->execute();
-  split.getActivity()->execute();
+  split->getActivity()->execute();
   test_out.getActivity()->execute();
 
   // get the result data
@@ -546,31 +568,39 @@ TEST(MessageSplitTest, AllValidExceptMiddle) {
   test_out.stop();
   test_out.cleanup();
 
-  split.stop();
-  split.cleanup();
+  split->stop();
+  split->cleanup();
+
+  d.getDc()->kickOutAll();
 }
 
 // Tests MessageSplit class for data valid on some input ports.
 TEST(MessageSplitTest, AllValidExceptHigh) {
 
+  message_tests::TestDeployer& d = message_tests::TestDeployer::Instance();
+
+  EXPECT_TRUE( d.getDc()->import("rtt_common_interfaces_test_subsystem_ports") );
+  EXPECT_TRUE(d.getDc()->loadComponent("split", "common_interfaces_test_msgs_ContainerSplit"));
+  RTT::TaskContext *split = d.getDc()->getPeer("split");
+  EXPECT_TRUE(split != NULL);
+
   // the component under test
-  MessageSplit<Container_Ports > split("split");
-  split.setActivity( new RTT::extras::SlaveActivity() );
-  EXPECT_TRUE( split.configure() );
-  EXPECT_TRUE( split.start() );
-  EXPECT_EQ( split.ports()->getPortNames().size(), 17);
+  split->setActivity( new RTT::extras::SlaveActivity() );
+  EXPECT_TRUE( split->configure() );
+  EXPECT_TRUE( split->start() );
+  EXPECT_EQ( split->ports()->getPortNames().size(), 17);
 
   // component that writes data on input ports of the component under test
   TestComponentIn test_in("test_in");
   test_in.setActivity( new RTT::extras::SlaveActivity() );
-  EXPECT_TRUE( test_in.connectPorts(&split) );
+  EXPECT_TRUE( test_in.connectPorts(split) );
   EXPECT_TRUE( test_in.configure() );
   EXPECT_TRUE( test_in.start() );
 
   // component that reads data from output port of the component under test
   TestComponentOut test_out("test_out");
   test_out.setActivity( new RTT::extras::SlaveActivity() );
-  EXPECT_TRUE( test_out.connectPorts(&split) );
+  EXPECT_TRUE( test_out.connectPorts(split) );
   EXPECT_TRUE( test_out.configure() );
   EXPECT_TRUE( test_out.start() );
 
@@ -584,7 +614,7 @@ TEST(MessageSplitTest, AllValidExceptHigh) {
 
   // execute all components
   test_in.getActivity()->execute();
-  split.getActivity()->execute();
+  split->getActivity()->execute();
   test_out.getActivity()->execute();
 
   // get the result data
@@ -651,8 +681,10 @@ TEST(MessageSplitTest, AllValidExceptHigh) {
   test_out.stop();
   test_out.cleanup();
 
-  split.stop();
-  split.cleanup();
+  split->stop();
+  split->cleanup();
+
+  d.getDc()->kickOutAll();
 }
 
 };  // namespace message_split_tests

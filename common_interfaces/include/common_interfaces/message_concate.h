@@ -36,15 +36,14 @@
 
 using namespace RTT;
 
-template <template <template <typename Type> class RTTport> class Interface>
+template <class Interface >
 class MessageConcate: public RTT::TaskContext {
 public:
-    typedef Interface<RTT::InputPort > InterfaceInport;
-    typedef typename InterfaceInport::Container_ Container;
+    typedef typename Interface::Container_ Container;
 
     explicit MessageConcate(const std::string& name) :
         TaskContext(name, PreOperational),
-        in_(*this),
+        in_(this),
         port_msg_out_("msg_OUTPORT"),
         port_msg_in_("msg_INPORT")
     {
@@ -74,8 +73,7 @@ public:
     void updateHook() {
         bool read_successful = false;
         if (port_msg_in_.read(msg_) != RTT::NewData) {
-            read_successful = in_.readPorts();
-            in_.convertToROS(msg_);
+            read_successful = in_.read(msg_);
         }
         else {
             read_successful = true;
@@ -91,7 +89,7 @@ public:
 private:
 
     RTT::InputPort<Container > port_msg_in_;
-    InterfaceInport in_;
+    Interface in_;
 
     Container msg_;
     RTT::OutputPort<Container > port_msg_out_;

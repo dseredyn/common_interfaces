@@ -12,7 +12,7 @@
 
   <buildtool_depend>catkin</buildtool_depend>
 
-  <build_depend>message_generation_subsystem_buffers</build_depend>
+  <build_depend>message_generation</build_depend>
   <build_depend>actionlib_msgs</build_depend>
   <build_depend>common_interfaces</build_depend>
 

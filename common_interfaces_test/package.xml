@@ -16,9 +16,17 @@
   <build_depend>shm_comm</build_depend>
   <build_depend>common_interfaces</build_depend>
   <build_depend>common_interfaces_test_msgs</build_depend>
+  <build_depend>rtt_common_interfaces_test_subsystem_ports</build_depend>
 
   <run_depend>rtt</run_depend>
   <run_depend>ocl</run_depend>
   <run_depend>rtt_ros</run_depend>
   <run_depend>shm_comm</run_depend>
+
+  <export>
+    <rtt_ros>
+      <!-- Plugin deps are loaded automatically by the rtt_ros import service -->
+      <plugin_depend>rtt_common_interfaces_test_subsystem_ports</plugin_depend>
+    </rtt_ros>
+  </export>
 </package>

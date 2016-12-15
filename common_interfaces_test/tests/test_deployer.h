@@ -25,72 +25,31 @@
  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-#ifndef MESSAGE_SPLIT_H__
-#define MESSAGE_SPLIT_H__
+#ifndef COMMON_INTERFACES_TEST_TEST_DEPLOYER_H_
+#define COMMON_INTERFACES_TEST_TEST_DEPLOYER_H_
 
-#include <vector>
-#include <string>
+#include <ocl/DeploymentComponent.hpp>
+#include <rtt/internal/GlobalService.hpp>
 
-#include "rtt/RTT.hpp"
-#include "rtt/Logger.hpp"
+namespace message_tests {
 
-using namespace RTT;
-
-template <class Interface >
-class MessageSplit: public RTT::TaskContext {
+class TestDeployer {
 public:
-    typedef typename Interface::Container_ Container;
 
-    explicit MessageSplit(const std::string& name) :
-        TaskContext(name, PreOperational),
-        out_(this),
-        port_msg_in_("msg_INPORT")
-    {
-        this->ports()->addPort(port_msg_in_);
-        this->addOperation("getDiag", &MessageSplit::getDiag, this, RTT::ClientThread);
-    }
+  TestDeployer(const std::string& name);
 
-    std::string getDiag() {
-    // this method may not be RT-safe
-        if (diag_buf_valid_) {
-            //std::stringstream ss;
-            //ros::message_operations::Printer<Container >::stream(ss, "", diag_buf_);
-            //return ss.str();
-            return "<data ok>";
-        }
-        return "<no data>";
-    }
+  bool import(const std::string& name);
 
-    bool configureHook() {
-        return true;
-    }
+  boost::shared_ptr<OCL::DeploymentComponent > getDc();
 
-    bool startHook() {
-        return true;
-    }
+  static TestDeployer& Instance();
 
-    void updateHook() {
-        if (port_msg_in_.read(msg_) == RTT::NewData) {
-            out_.write(msg_);
-            diag_buf_ = msg_;
-            diag_buf_valid_ = true;
-        }
-        else {
-            diag_buf_valid_ = false;
-        }
-    }
-
-private:
-
-    Interface out_;
-
-    Container msg_;
-    RTT::InputPort<Container > port_msg_in_;
-
-    Container diag_buf_;
-    bool diag_buf_valid_;
+protected:
+  RTT::OperationCaller<bool(const std::string&)> ros_import_;
+  boost::shared_ptr<OCL::DeploymentComponent > dc_;
 };
 
+}   // namespace message_tests
 
-#endif  // MESSAGE_SPLIT_H__
+#endif  // COMMON_INTERFACES_TEST_TEST_DEPLOYER_H_
 

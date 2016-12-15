@@ -36,91 +36,172 @@
 
 #include "rtt/RTT.hpp"
 
-#include "common_interfaces/interface_port_data.h"
-
 namespace interface_ports {
 
-template <typename rosC >
-class PortInterface {
+
+template <typename T >
+class InputPortInterface {
 public:
-    virtual void convertFromROS(const rosC &container) = 0;
-    virtual void convertToROS(rosC &container) = 0;
-    virtual bool readPorts() = 0;
-    virtual bool writePorts() = 0;
+    virtual bool read(T &data) = 0;
 };
 
-template <template <typename Type> class T, typename innerT, typename rosT >
-class Port : public PortInterface<rosT > { };
-
-template <typename innerT, typename rosT >
-class Port<RTT::InputPort, innerT, rosT > : public PortInterface<rosT > {
+template <typename T >
+class OutputPortInterface {
 public:
-    Port(RTT::TaskContext &tc, const std::string &port_name) :
-        port_(port_name + "_INPORT"),
-        data_()
+    virtual bool write(const T &data) = 0;
+};
+
+template <typename T >
+class InputPort : public InputPortInterface<T > {
+public:
+    InputPort(RTT::TaskContext *tc, const std::string &port_name) :
+        port_(port_name + "_INPORT")
     {
-        tc.ports()->addPort(port_);
-        //port_.setDataSample(data_.data_);     // no operation for input port
+        tc->ports()->addPort(port_);
     }
 
-    virtual void convertFromROS(const rosT &data) {
-        data_.convertFromROS(data);
-    }
-
-    virtual void convertToROS(rosT &data) {
-        data_.convertToROS(data);
-    }
-
-    virtual bool readPorts() {
-        return port_.read(data_.data_) == RTT::NewData;
-    }
-
-    virtual bool writePorts() {
-        return false;
+    virtual bool read(T &data) {
+        return (port_.read(data) == RTT::NewData);
     }
 
 protected:
 
-    RTT::InputPort<innerT > port_;
-
-    PortRawData<innerT, rosT > data_;
+    RTT::InputPort<T > port_;
 };
 
-template <typename innerT, typename rosT >
-class Port<RTT::OutputPort, innerT, rosT > : public PortInterface<rosT > {
+template <typename T >
+class OutputPort : public OutputPortInterface<T > {
 public:
-    Port(RTT::TaskContext &tc, const std::string &port_name) :
-        port_(port_name + "_OUTPORT", true),
-        data_()
+    OutputPort(RTT::TaskContext *tc, const std::string &port_name) :
+        port_(port_name + "_OUTPORT", true)
     {
-        tc.ports()->addPort(port_);
-        port_.setDataSample(data_.data_);
+        tc->ports()->addPort(port_);
     }
 
-    virtual void convertFromROS(const rosT &data) {
-        data_.convertFromROS(data);
-    }
-
-    virtual void convertToROS(rosT &data) {
-        data_.convertToROS(data);
-    }
-
-    virtual bool readPorts() {
-        return false;
-    }
-
-    virtual bool writePorts() {
-        port_.write(data_.data_);
+    virtual bool write(const T &data) {
+        port_.write(data);
+        return true;
     }
 
 protected:
 
-    RTT::OutputPort<innerT > port_;
+    RTT::OutputPort<T > port_;
+};
 
-    PortRawData<innerT, rosT > data_;
+template <typename T >
+class InputPortInterfaceFactory
+{
+private:
+    std::map<string, InputPortInterface<T >* (*)(RTT::TaskContext *tc, const std::string& prefix) > factoryFunctionRegistry;
+
+    InputPortInterfaceFactory() {}
+
+public:
+    boost::shared_ptr<InputPortInterface<T > > Create(string name, RTT::TaskContext *tc, const std::string& prefix)
+    {
+        InputPortInterface<T > * instance = NULL;
+
+        // find name in the registry and call factory method.
+        typename std::map<string, InputPortInterface<T >* (*)(RTT::TaskContext *tc, const std::string& prefix) >::const_iterator it = factoryFunctionRegistry.find(name);
+        if(it != factoryFunctionRegistry.end())
+            instance = it->second(tc, prefix);
+
+        // wrap instance in a shared ptr and return
+        if(instance != NULL)
+            return boost::shared_ptr<InputPortInterface<T > >(instance);
+        else
+            return boost::shared_ptr<InputPortInterface<T > >();
+    }
+
+    void RegisterFactoryFunction(string name, InputPortInterface<T >* (*classFactoryFunction)(RTT::TaskContext *tc, const std::string& prefix) )
+    {
+        // register the class factory function
+        factoryFunctionRegistry[name] = classFactoryFunction;
+    }
+
+    static InputPortInterfaceFactory* Instance()
+    {
+        static InputPortInterfaceFactory factory;
+        return &factory;
+    }
+};
+
+template<class T>
+InputPortInterface<typename T::Container_ >* InputPortInterfaceFactoryFunction(RTT::TaskContext *tc, const std::string& prefix) {
+    return new T(tc, prefix);
+}
+
+template<class T>
+class InputPortInterfaceRegistrar {
+public:
+    InputPortInterfaceRegistrar(const std::string& name)
+    {
+        // register the class factory function 
+        InputPortInterfaceFactory<typename T::Container_ >::Instance()->RegisterFactoryFunction(name, InputPortInterfaceFactoryFunction<T >);
+    }
+};
+
+
+// TODO: factory for OutputPortInterface
+
+template <typename T >
+class OutputPortInterfaceFactory
+{
+private:
+    std::map<string, OutputPortInterface<T >* (*)(RTT::TaskContext *tc, const std::string& prefix) > factoryFunctionRegistry;
+
+    OutputPortInterfaceFactory() {}
+
+public:
+    boost::shared_ptr<OutputPortInterface<T > > Create(string name, RTT::TaskContext *tc, const std::string& prefix)
+    {
+        OutputPortInterface<T > * instance = NULL;
+
+        // find name in the registry and call factory method.
+        typename std::map<string, OutputPortInterface<T >* (*)(RTT::TaskContext *tc, const std::string& prefix) >::const_iterator it = factoryFunctionRegistry.find(name);
+        if(it != factoryFunctionRegistry.end())
+            instance = it->second(tc, prefix);
+
+        // wrap instance in a shared ptr and return
+        if(instance != NULL)
+            return boost::shared_ptr<OutputPortInterface<T > >(instance);
+        else
+            return boost::shared_ptr<OutputPortInterface<T > >();
+    }
+
+    void RegisterFactoryFunction(string name, OutputPortInterface<T >* (*classFactoryFunction)(RTT::TaskContext *tc, const std::string& prefix) )
+    {
+        // register the class factory function
+        factoryFunctionRegistry[name] = classFactoryFunction;
+    }
+
+    static OutputPortInterfaceFactory* Instance()
+    {
+        static OutputPortInterfaceFactory factory;
+        return &factory;
+    }
+};
+
+template<class T>
+OutputPortInterface<typename T::Container_ >* OutputPortInterfaceFactoryFunction(RTT::TaskContext *tc, const std::string& prefix) {
+    return new T(tc, prefix);
+}
+
+template<class T>
+class OutputPortInterfaceRegistrar {
+public:
+    OutputPortInterfaceRegistrar(const std::string& name)
+    {
+        // register the class factory function 
+        OutputPortInterfaceFactory<typename T::Container_ >::Instance()->RegisterFactoryFunction(name, OutputPortInterfaceFactoryFunction<T >);
+    }
 };
 
 };  // namespace interface_ports
+
+#define REGISTER_InputPortInterface( CLASS, NAME ) static interface_ports::InputPortInterfaceRegistrar<CLASS > input_registrar(NAME)
+
+#define REGISTER_OutputPortInterface( CLASS, NAME ) static interface_ports::OutputPortInterfaceRegistrar<CLASS > output_registrar(NAME)
 
 #endif  // __COMMON_INTERFACES_INTERFACE_PORTS_H__
 

@@ -9,9 +9,9 @@ The package contains unit tests for:
 * ROS msg split into Orocos ports.
 
 To build unit tests run:<return>
-catkin build --make-args tests
+catkin build --catkin-make-args tests
 
 To execute the tests run:<return>
-catkin build --make-args test -- common_interfaces
+catkin build --catkin-make-args tests -- common_interfaces
 
 

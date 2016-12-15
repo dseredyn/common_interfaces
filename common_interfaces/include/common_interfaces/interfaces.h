@@ -41,10 +41,10 @@ typedef InterfaceTx<CLASS_NAME_STATUS > INTERFACE_PREFIX##StatusTx; \
 typedef InterfaceRx<CLASS_NAME_STATUS > INTERFACE_PREFIX##StatusRx; \
 typedef InterfaceTx<CLASS_NAME_COMMAND > INTERFACE_PREFIX##CommandTx; \
 typedef InterfaceRx<CLASS_NAME_COMMAND > INTERFACE_PREFIX##CommandRx; \
-typedef MessageSplit<CLASS_NAME_COMMAND##_Ports > INTERFACE_PREFIX##CommandSplit; \
-typedef MessageConcate<CLASS_NAME_STATUS##_Ports > INTERFACE_PREFIX##StatusConcate; \
-typedef MessageSplit<CLASS_NAME_STATUS##_Ports > INTERFACE_PREFIX##StatusSplit; \
-typedef MessageConcate<CLASS_NAME_COMMAND##_Ports > INTERFACE_PREFIX##CommandConcate; \
+typedef MessageSplit<CLASS_NAME_COMMAND##_OutputPorts > INTERFACE_PREFIX##CommandSplit; \
+typedef MessageConcate<CLASS_NAME_STATUS##_InputPorts > INTERFACE_PREFIX##StatusConcate; \
+typedef MessageSplit<CLASS_NAME_STATUS##_OutputPorts > INTERFACE_PREFIX##StatusSplit; \
+typedef MessageConcate<CLASS_NAME_COMMAND##_InputPorts > INTERFACE_PREFIX##CommandConcate; \
 namespace INTERFACE_PREFIX##StatusTx_namespace { ORO_LIST_COMPONENT_TYPE(INTERFACE_PREFIX##StatusTx) } \
 namespace INTERFACE_PREFIX##StatusRx_namespace { ORO_LIST_COMPONENT_TYPE(INTERFACE_PREFIX##StatusRx) } \
 namespace INTERFACE_PREFIX##CommandTx_namespace { ORO_LIST_COMPONENT_TYPE(INTERFACE_PREFIX##CommandTx) } \
@@ -54,7 +54,7 @@ namespace INTERFACE_PREFIX##StatusConcate_namespace { ORO_LIST_COMPONENT_TYPE(IN
 namespace INTERFACE_PREFIX##StatusSplit_namespace { ORO_LIST_COMPONENT_TYPE(INTERFACE_PREFIX##StatusSplit) } \
 namespace INTERFACE_PREFIX##CommandConcate_namespace { ORO_LIST_COMPONENT_TYPE(INTERFACE_PREFIX##CommandConcate) }
 
-
+/*
 #define ORO_LIST_INTERFACE_STATUS_TX_COMPONENT( CLASS_NAME_STATUS, INTERFACE_PREFIX ) \
 typedef InterfaceTx<CLASS_NAME_STATUS > INTERFACE_PREFIX##StatusTx; \
 namespace INTERFACE_PREFIX##StatusTx_namespace { ORO_LIST_COMPONENT_TYPE(INTERFACE_PREFIX##StatusTx) }
@@ -86,7 +86,7 @@ namespace INTERFACE_PREFIX##CommandSplit_namespace { ORO_LIST_COMPONENT_TYPE(INT
 #define ORO_LIST_INTERFACE_COMMAND_CONCATE_COMPONENT( CLASS_NAME_COMMAND, INTERFACE_PREFIX ) \
 typedef MessageConcate<CLASS_NAME_COMMAND##_Ports > INTERFACE_PREFIX##CommandConcate; \
 namespace INTERFACE_PREFIX##CommandConcate_namespace { ORO_LIST_COMPONENT_TYPE(INTERFACE_PREFIX##CommandConcate) }
-
+*/
 
 #endif  // __COMMON_INTERFACES_INTERFACES_H__
 

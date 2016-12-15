@@ -25,72 +25,47 @@
  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-#ifndef MESSAGE_SPLIT_H__
-#define MESSAGE_SPLIT_H__
+#include "test_deployer.h"
+#include <rtt/Logger.hpp>
 
-#include <vector>
-#include <string>
-
-#include "rtt/RTT.hpp"
-#include "rtt/Logger.hpp"
+namespace message_tests {
 
 using namespace RTT;
 
-template <class Interface >
-class MessageSplit: public RTT::TaskContext {
-public:
-    typedef typename Interface::Container_ Container;
+  TestDeployer::TestDeployer(const std::string& name)
+      : dc_(new OCL::DeploymentComponent(name)) {
+    dc_->import("rtt_ros");
 
-    explicit MessageSplit(const std::string& name) :
-        TaskContext(name, PreOperational),
-        out_(this),
-        port_msg_in_("msg_INPORT")
-    {
-        this->ports()->addPort(port_msg_in_);
-        this->addOperation("getDiag", &MessageSplit::getDiag, this, RTT::ClientThread);
+    RTT::Service::shared_ptr ros = RTT::internal::GlobalService::Instance()->getService("ros");
+    if (!ros) {
+      Logger::log() << Logger::Error << "rtt_ros: ros service could not be loaded (NULL pointer)" << Logger::endl;
     }
 
-    std::string getDiag() {
-    // this method may not be RT-safe
-        if (diag_buf_valid_) {
-            //std::stringstream ss;
-            //ros::message_operations::Printer<Container >::stream(ss, "", diag_buf_);
-            //return ss.str();
-            return "<data ok>";
-        }
-        return "<no data>";
+    ros_import_ = ros->getOperation("import");
+  }
+
+  bool TestDeployer::import(const std::string& name) {
+    if (!ros_import_.ready()) {
+      Logger::log() << Logger::Error << "ros.import operation is not ready" << Logger::endl;
+      return false;
     }
 
-    bool configureHook() {
-        return true;
+    if (!ros_import_(name)) {
+      Logger::log() << Logger::Error << "could not import: " << name << Logger::endl;
+      return false;
     }
 
-    bool startHook() {
-        return true;
-    }
+    return true;
+  }
 
-    void updateHook() {
-        if (port_msg_in_.read(msg_) == RTT::NewData) {
-            out_.write(msg_);
-            diag_buf_ = msg_;
-            diag_buf_valid_ = true;
-        }
-        else {
-            diag_buf_valid_ = false;
-        }
-    }
+  boost::shared_ptr<OCL::DeploymentComponent > TestDeployer::getDc() {
+    return dc_;
+  }
 
-private:
+  TestDeployer& TestDeployer::Instance() {
+    static TestDeployer d("test_deployer");
+    return d;
+  }
 
-    Interface out_;
-
-    Container msg_;
-    RTT::InputPort<Container > port_msg_in_;
-
-    Container diag_buf_;
-    bool diag_buf_valid_;
-};
-
-
-#endif  // MESSAGE_SPLIT_H__
+}   // namespace message_tests
 

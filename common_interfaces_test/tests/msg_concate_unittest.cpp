@@ -27,10 +27,11 @@
 
 #include <limits.h>
 #include "common_interfaces_test_msgs/Container.h"
-#include "common_interfaces/message_concate.h"
 #include <rtt/extras/SlaveActivity.hpp>
 
 #include "gtest/gtest.h"
+
+#include "test_deployer.h"
 
 namespace message_concate_tests {
 
@@ -217,30 +218,34 @@ void initContainerData(Container& cont_in) {
   cont_in.field2 = 27;
 }
 
-
 // Tests for class MessageConcate.
 
 // Tests MessageConcate class for data valid on all input ports.
 TEST(MessageConcateTest, AllValid) {
 
-  // the component under test
-  MessageConcate<Container_Ports > concate("concate");
-  concate.setActivity( new RTT::extras::SlaveActivity() );
-  EXPECT_TRUE( concate.configure() );
-  EXPECT_TRUE( concate.start() );
-  EXPECT_EQ( concate.ports()->getPortNames().size(), 18);
+  message_tests::TestDeployer& d = message_tests::TestDeployer::Instance();
+
+  EXPECT_TRUE( d.getDc()->import("rtt_common_interfaces_test_subsystem_ports") );
+  EXPECT_TRUE(d.getDc()->loadComponent("concate", "common_interfaces_test_msgs_ContainerConcate"));
+  RTT::TaskContext *concate = d.getDc()->getPeer("concate");
+  EXPECT_TRUE(concate != NULL);
+
+  concate->setActivity( new RTT::extras::SlaveActivity() );
+  EXPECT_TRUE( concate->configure() );
+  EXPECT_TRUE( concate->start() );
+  EXPECT_EQ( concate->ports()->getPortNames().size(), 18);
 
   // component that writes data on input ports of the component under test
   TestComponentIn test_in("test_in");
   test_in.setActivity( new RTT::extras::SlaveActivity() );
-  EXPECT_TRUE( test_in.connectPorts(&concate) );
+  EXPECT_TRUE( test_in.connectPorts(concate) );
   EXPECT_TRUE( test_in.configure() );
   EXPECT_TRUE( test_in.start() );
 
   // component that reads data from output port of the component under test
   TestComponentOut test_out("test_out");
   test_out.setActivity( new RTT::extras::SlaveActivity() );
-  EXPECT_TRUE( test_out.connectPorts(&concate) );
+  EXPECT_TRUE( test_out.connectPorts(concate) );
   EXPECT_TRUE( test_out.configure() );
   EXPECT_TRUE( test_out.start() );
 
@@ -253,7 +258,7 @@ TEST(MessageConcateTest, AllValid) {
 
   // execute all components
   test_in.getActivity()->execute();
-  concate.getActivity()->execute();
+  concate->getActivity()->execute();
   test_out.getActivity()->execute();
 
   EXPECT_TRUE(test_out.isReadSuccessful());
@@ -320,32 +325,40 @@ TEST(MessageConcateTest, AllValid) {
   test_out.stop();
   test_out.cleanup();
 
-  concate.stop();
-  concate.cleanup();
+  concate->stop();
+  concate->cleanup();
+
+  d.getDc()->kickOutAll();
 }
 
 // Tests MessageConcate class for data valid on some input ports.
 TEST(MessageConcateTest, InvalidCaughtOnTheSameLevel) {
-  // the component under test
-  MessageConcate<Container_Ports > concate("concate");
-  concate.setActivity( new RTT::extras::SlaveActivity() );
-  EXPECT_TRUE( concate.configure() );
-  EXPECT_TRUE( concate.start() );
-  EXPECT_EQ( concate.ports()->getPortNames().size(), 18);
+
+  message_tests::TestDeployer& d = message_tests::TestDeployer::Instance();
+
+  EXPECT_TRUE( d.getDc()->import("rtt_common_interfaces_test_subsystem_ports") );
+  EXPECT_TRUE(d.getDc()->loadComponent("concate", "common_interfaces_test_msgs_ContainerConcate"));
+  RTT::TaskContext *concate = d.getDc()->getPeer("concate");
+  EXPECT_TRUE(concate != NULL);
+
+  concate->setActivity( new RTT::extras::SlaveActivity() );
+  EXPECT_TRUE( concate->configure() );
+  EXPECT_TRUE( concate->start() );
+  EXPECT_EQ( concate->ports()->getPortNames().size(), 18);
 
   // component that writes data on input ports of the component under test
   TestComponentIn test_in("test_in");
   test_in.setActivity( new RTT::extras::SlaveActivity() );
   std::vector<std::string > not_connected_ports;
   not_connected_ports.push_back("cont1_sub1_field1");
-  EXPECT_TRUE( test_in.connectPorts(&concate, not_connected_ports) );
+  EXPECT_TRUE( test_in.connectPorts(concate, not_connected_ports) );
   EXPECT_TRUE( test_in.configure() );
   EXPECT_TRUE( test_in.start() );
 
   // component that reads data from output port of the component under test
   TestComponentOut test_out("test_out");
   test_out.setActivity( new RTT::extras::SlaveActivity() );
-  EXPECT_TRUE( test_out.connectPorts(&concate) );
+  EXPECT_TRUE( test_out.connectPorts(concate) );
   EXPECT_TRUE( test_out.configure() );
   EXPECT_TRUE( test_out.start() );
 
@@ -358,7 +371,7 @@ TEST(MessageConcateTest, InvalidCaughtOnTheSameLevel) {
 
   // execute all components
   test_in.getActivity()->execute();
-  concate.getActivity()->execute();
+  concate->getActivity()->execute();
   test_out.getActivity()->execute();
 
   // get the result data
@@ -424,33 +437,40 @@ TEST(MessageConcateTest, InvalidCaughtOnTheSameLevel) {
   test_out.stop();
   test_out.cleanup();
 
-  concate.stop();
-  concate.cleanup();
-}
+  concate->stop();
+  concate->cleanup();
 
+  d.getDc()->kickOutAll();
+}
 
 // Tests MessageConcate class for data valid on some input ports.
 TEST(MessageConcateTest, InvalidCaughtOnHigherLevel) {
-  // the component under test
-  MessageConcate<Container_Ports > concate("concate");
-  concate.setActivity( new RTT::extras::SlaveActivity() );
-  EXPECT_TRUE( concate.configure() );
-  EXPECT_TRUE( concate.start() );
-  EXPECT_EQ( concate.ports()->getPortNames().size(), 18);
+
+  message_tests::TestDeployer& d = message_tests::TestDeployer::Instance();
+
+  EXPECT_TRUE( d.getDc()->import("rtt_common_interfaces_test_subsystem_ports") );
+  EXPECT_TRUE(d.getDc()->loadComponent("concate", "common_interfaces_test_msgs_ContainerConcate"));
+  RTT::TaskContext *concate = d.getDc()->getPeer("concate");
+  EXPECT_TRUE(concate != NULL);
+
+  concate->setActivity( new RTT::extras::SlaveActivity() );
+  EXPECT_TRUE( concate->configure() );
+  EXPECT_TRUE( concate->start() );
+  EXPECT_EQ( concate->ports()->getPortNames().size(), 18);
 
   // component that writes data on input ports of the component under test
   TestComponentIn test_in("test_in");
   test_in.setActivity( new RTT::extras::SlaveActivity() );
   std::vector<std::string > not_connected_ports;
   not_connected_ports.push_back("cont1_sub1_field2");
-  EXPECT_TRUE( test_in.connectPorts(&concate, not_connected_ports) );
+  EXPECT_TRUE( test_in.connectPorts(concate, not_connected_ports) );
   EXPECT_TRUE( test_in.configure() );
   EXPECT_TRUE( test_in.start() );
 
   // component that reads data from output port of the component under test
   TestComponentOut test_out("test_out");
   test_out.setActivity( new RTT::extras::SlaveActivity() );
-  EXPECT_TRUE( test_out.connectPorts(&concate) );
+  EXPECT_TRUE( test_out.connectPorts(concate) );
   EXPECT_TRUE( test_out.configure() );
   EXPECT_TRUE( test_out.start() );
 
@@ -463,7 +483,7 @@ TEST(MessageConcateTest, InvalidCaughtOnHigherLevel) {
 
   // execute all components
   test_in.getActivity()->execute();
-  concate.getActivity()->execute();
+  concate->getActivity()->execute();
   test_out.getActivity()->execute();
 
   // get the result data
@@ -529,33 +549,41 @@ TEST(MessageConcateTest, InvalidCaughtOnHigherLevel) {
   test_out.stop();
   test_out.cleanup();
 
-  concate.stop();
-  concate.cleanup();
+  concate->stop();
+  concate->cleanup();
+
+  d.getDc()->kickOutAll();
 }
 
 
 // Tests MessageConcate class for data valid on some input ports.
 TEST(MessageConcateTest, InvalidCaughtOnHighestLevel) {
-  // the component under test
-  MessageConcate<Container_Ports > concate("concate");
-  concate.setActivity( new RTT::extras::SlaveActivity() );
-  EXPECT_TRUE( concate.configure() );
-  EXPECT_TRUE( concate.start() );
-  EXPECT_EQ( concate.ports()->getPortNames().size(), 18);
+
+  message_tests::TestDeployer& d = message_tests::TestDeployer::Instance();
+
+  EXPECT_TRUE( d.getDc()->import("rtt_common_interfaces_test_subsystem_ports") );
+  EXPECT_TRUE(d.getDc()->loadComponent("concate", "common_interfaces_test_msgs_ContainerConcate"));
+  RTT::TaskContext *concate = d.getDc()->getPeer("concate");
+  EXPECT_TRUE(concate != NULL);
+
+  concate->setActivity( new RTT::extras::SlaveActivity() );
+  EXPECT_TRUE( concate->configure() );
+  EXPECT_TRUE( concate->start() );
+  EXPECT_EQ( concate->ports()->getPortNames().size(), 18);
 
   // component that writes data on input ports of the component under test
   TestComponentIn test_in("test_in");
   test_in.setActivity( new RTT::extras::SlaveActivity() );
   std::vector<std::string > not_connected_ports;
   not_connected_ports.push_back("cont2_sub2_field2");
-  EXPECT_TRUE( test_in.connectPorts(&concate, not_connected_ports) );
+  EXPECT_TRUE( test_in.connectPorts(concate, not_connected_ports) );
   EXPECT_TRUE( test_in.configure() );
   EXPECT_TRUE( test_in.start() );
 
   // component that reads data from output port of the component under test
   TestComponentOut test_out("test_out");
   test_out.setActivity( new RTT::extras::SlaveActivity() );
-  EXPECT_TRUE( test_out.connectPorts(&concate) );
+  EXPECT_TRUE( test_out.connectPorts(concate) );
   EXPECT_TRUE( test_out.configure() );
   EXPECT_TRUE( test_out.start() );
 
@@ -568,7 +596,7 @@ TEST(MessageConcateTest, InvalidCaughtOnHighestLevel) {
 
   // execute all components
   test_in.getActivity()->execute();
-  concate.getActivity()->execute();
+  concate->getActivity()->execute();
   test_out.getActivity()->execute();
 
   // get the result data
@@ -632,33 +660,41 @@ TEST(MessageConcateTest, InvalidCaughtOnHighestLevel) {
   test_out.stop();
   test_out.cleanup();
 
-  concate.stop();
-  concate.cleanup();
+  concate->stop();
+  concate->cleanup();
+
+  d.getDc()->kickOutAll();
 }
 
 
 // Tests MessageConcate class for data valid on some input ports.
 TEST(MessageConcateTest, InvalidCaughtOnMiddleLevel) {
-  // the component under test
-  MessageConcate<Container_Ports > concate("concate");
-  concate.setActivity( new RTT::extras::SlaveActivity() );
-  EXPECT_TRUE( concate.configure() );
-  EXPECT_TRUE( concate.start() );
-  EXPECT_EQ( concate.ports()->getPortNames().size(), 18);
+
+  message_tests::TestDeployer& d = message_tests::TestDeployer::Instance();
+
+  EXPECT_TRUE( d.getDc()->import("rtt_common_interfaces_test_subsystem_ports") );
+  EXPECT_TRUE(d.getDc()->loadComponent("concate", "common_interfaces_test_msgs_ContainerConcate"));
+  RTT::TaskContext *concate = d.getDc()->getPeer("concate");
+  EXPECT_TRUE(concate != NULL);
+
+  concate->setActivity( new RTT::extras::SlaveActivity() );
+  EXPECT_TRUE( concate->configure() );
+  EXPECT_TRUE( concate->start() );
+  EXPECT_EQ( concate->ports()->getPortNames().size(), 18);
 
   // component that writes data on input ports of the component under test
   TestComponentIn test_in("test_in");
   test_in.setActivity( new RTT::extras::SlaveActivity() );
   std::vector<std::string > not_connected_ports;
   not_connected_ports.push_back("cont1_sub2_field2");
-  EXPECT_TRUE( test_in.connectPorts(&concate, not_connected_ports) );
+  EXPECT_TRUE( test_in.connectPorts(concate, not_connected_ports) );
   EXPECT_TRUE( test_in.configure() );
   EXPECT_TRUE( test_in.start() );
 
   // component that reads data from output port of the component under test
   TestComponentOut test_out("test_out");
   test_out.setActivity( new RTT::extras::SlaveActivity() );
-  EXPECT_TRUE( test_out.connectPorts(&concate) );
+  EXPECT_TRUE( test_out.connectPorts(concate) );
   EXPECT_TRUE( test_out.configure() );
   EXPECT_TRUE( test_out.start() );
 
@@ -671,7 +707,7 @@ TEST(MessageConcateTest, InvalidCaughtOnMiddleLevel) {
 
   // execute all components
   test_in.getActivity()->execute();
-  concate.getActivity()->execute();
+  concate->getActivity()->execute();
   test_out.getActivity()->execute();
 
   // get the result data
@@ -736,8 +772,10 @@ TEST(MessageConcateTest, InvalidCaughtOnMiddleLevel) {
   test_out.stop();
   test_out.cleanup();
 
-  concate.stop();
-  concate.cleanup();
+  concate->stop();
+  concate->cleanup();
+
+  d.getDc()->kickOutAll();
 }
 
 };  // namespace message_concate_tests
