@@ -250,7 +250,7 @@ TEST(MessageSplitTest, AllValid) {
   split->setActivity( new RTT::extras::SlaveActivity() );
   EXPECT_TRUE( split->configure() );
   EXPECT_TRUE( split->start() );
-  EXPECT_EQ( split->ports()->getPortNames().size(), 17);
+  EXPECT_EQ( split->ports()->getPortNames().size(), 24);
 
   // component that writes data on input ports of the component under test
   TestComponentIn test_in("test_in");
@@ -360,7 +360,7 @@ TEST(MessageSplitTest, AllValidExceptLowest) {
   split->setActivity( new RTT::extras::SlaveActivity() );
   EXPECT_TRUE( split->configure() );
   EXPECT_TRUE( split->start() );
-  EXPECT_EQ( split->ports()->getPortNames().size(), 17);
+  EXPECT_EQ( split->ports()->getPortNames().size(), 24);
 
   // component that writes data on input ports of the component under test
   TestComponentIn test_in("test_in");
@@ -474,7 +474,7 @@ TEST(MessageSplitTest, AllValidExceptMiddle) {
   split->setActivity( new RTT::extras::SlaveActivity() );
   EXPECT_TRUE( split->configure() );
   EXPECT_TRUE( split->start() );
-  EXPECT_EQ( split->ports()->getPortNames().size(), 17);
+  EXPECT_EQ( split->ports()->getPortNames().size(), 24);
 
   // component that writes data on input ports of the component under test
   TestComponentIn test_in("test_in");
@@ -588,7 +588,7 @@ TEST(MessageSplitTest, AllValidExceptHigh) {
   split->setActivity( new RTT::extras::SlaveActivity() );
   EXPECT_TRUE( split->configure() );
   EXPECT_TRUE( split->start() );
-  EXPECT_EQ( split->ports()->getPortNames().size(), 17);
+  EXPECT_EQ( split->ports()->getPortNames().size(), 24);
 
   // component that writes data on input ports of the component under test
   TestComponentIn test_in("test_in");
@@ -686,6 +686,8 @@ TEST(MessageSplitTest, AllValidExceptHigh) {
 
   d.getDc()->kickOutAll();
 }
+
+// TODO: write unit tests for container ports
 
 };  // namespace message_split_tests
 

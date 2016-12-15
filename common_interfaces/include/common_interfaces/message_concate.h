@@ -44,11 +44,9 @@ public:
     explicit MessageConcate(const std::string& name) :
         TaskContext(name, PreOperational),
         in_(this),
-        port_msg_out_("msg_OUTPORT"),
-        port_msg_in_("msg_INPORT")
+        port_msg_out_("msg_OUTPORT")
     {
         this->ports()->addPort(port_msg_out_);
-        this->ports()->addPort(port_msg_in_);
         this->addOperation("getDiag", &MessageConcate::getDiag, this, RTT::ClientThread);
     }
 
@@ -71,14 +69,7 @@ public:
     }
 
     void updateHook() {
-        bool read_successful = false;
-        if (port_msg_in_.read(msg_) != RTT::NewData) {
-            read_successful = in_.read(msg_);
-        }
-        else {
-            read_successful = true;
-        }
-
+        bool read_successful = in_.read(msg_);
         if (read_successful) {
             port_msg_out_.write(msg_);
             diag_buf_ = msg_;
@@ -88,7 +79,6 @@ public:
 
 private:
 
-    RTT::InputPort<Container > port_msg_in_;
     Interface in_;
 
     Container msg_;
