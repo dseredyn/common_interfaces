@@ -25,8 +25,8 @@
  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-#ifndef INTERFACE_RX_H__
-#define INTERFACE_RX_H__
+#ifndef COMMON_INTERFACES_INTERFACE_RX_H__
+#define COMMON_INTERFACES_INTERFACE_RX_H__
 
 #include "shm_comm/shm_channel.h"
 
@@ -238,5 +238,5 @@ private:
 };
 
 
-#endif  // INTERFACE_RX_H__
+#endif  // COMMON_INTERFACES_INTERFACE_RX_H__
 

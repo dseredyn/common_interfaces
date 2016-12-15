@@ -25,8 +25,8 @@
  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-#ifndef MESSAGE_CONCATE_H__
-#define MESSAGE_CONCATE_H__
+#ifndef COMMON_INTERFACES_MESSAGE_CONCATE_H__
+#define COMMON_INTERFACES_MESSAGE_CONCATE_H__
 
 #include <vector>
 #include <string>
@@ -89,5 +89,5 @@ private:
 };
 
 
-#endif  // MESSAGE_CONCATE_H__
+#endif  // COMMON_INTERFACES_MESSAGE_CONCATE_H__
 

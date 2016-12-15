@@ -25,8 +25,8 @@
  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-#ifndef INTERFACE_TX_H__
-#define INTERFACE_TX_H__
+#ifndef COMMON_INTERFACES_INTERFACE_TX_H__
+#define COMMON_INTERFACES_INTERFACE_TX_H__
 
 #include "shm_comm/shm_channel.h"
 
@@ -180,5 +180,5 @@ private:
     bool diag_buf_valid_;
 };
 
-#endif  // INTERFACE_TX_H__
+#endif  // COMMON_INTERFACES_INTERFACE_TX_H__
 
