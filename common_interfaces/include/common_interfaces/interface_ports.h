@@ -88,54 +88,6 @@ protected:
     RTT::OutputPort<T > port_;
 };
 
-template <typename rosT, typename oroT >
-class InputPortConv : public InputPortInterface<rosT > {
-public:
-    explicit InputPortConv(RTT::TaskContext *tc, const std::string &port_name) :
-        port_(port_name + "_INPORT")
-    {
-        tc->ports()->addPort(port_);
-    }
-
-    virtual bool read(rosT &data_ros) {
-        oroT data_oro;
-        if (port_.read(data_oro) != RTT::NewData) {
-            return false;
-        }
-        convert(data_oro, data_ros);
-        return true;
-    }
-
-    virtual void convert(const oroT& data_oro, rosT& data_ros) const = 0;
-
-protected:
-
-    RTT::InputPort<oroT > port_;
-};
-
-template <typename rosT, typename oroT >
-class OutputPortConv : public OutputPortInterface<rosT > {
-public:
-    explicit OutputPortConv(RTT::TaskContext *tc, const std::string &port_name) :
-        port_(port_name + "_OUTPORT")
-    {
-        tc->ports()->addPort(port_);
-    }
-
-    virtual bool write(const rosT &data_ros) {
-        oroT data_oro;
-        convert(data_ros, data_oro);
-        port_.write(data_oro);
-        return true;
-    }
-
-    virtual void convert(const rosT& data_ros, oroT& data_oro) const = 0;
-
-protected:
-
-    RTT::OutputPort<oroT > port_;
-};
-
 template <typename T >
 class InputPortInterfaceFactory
 {
@@ -154,6 +106,8 @@ public:
         if(it != factoryFunctionRegistry.end())
             instance = it->second(tc, prefix);
 
+        //std::cout << "InputPortInterfaceFactory::Create: " << name << ", " << ((instance!=NULL)?"ok":"failed")<< std::endl;       // debug
+
         // wrap instance in a shared ptr and return
         if(instance != NULL)
             return boost::shared_ptr<InputPortInterface<T > >(instance);
@@ -163,6 +117,8 @@ public:
 
     void RegisterFactoryFunction(string name, InputPortInterface<T >* (*classFactoryFunction)(RTT::TaskContext *tc, const std::string& prefix) )
     {
+        //std::cout << "InputPortInterfaceFactory::RegisterFactoryFunction: " << name << std::endl;     // debug
+
         // register the class factory function
         factoryFunctionRegistry[name] = classFactoryFunction;
     }
@@ -189,9 +145,6 @@ public:
     }
 };
 
-
-// TODO: factory for OutputPortInterface
-
 template <typename T >
 class OutputPortInterfaceFactory
 {
@@ -210,6 +163,8 @@ public:
         if(it != factoryFunctionRegistry.end())
             instance = it->second(tc, prefix);
 
+        //std::cout << "OutputPortInterfaceFactory::Create: " << name << ", " << ((instance!=NULL)?"ok":"failed")<< std::endl;      // debug
+
         // wrap instance in a shared ptr and return
         if(instance != NULL)
             return boost::shared_ptr<OutputPortInterface<T > >(instance);
@@ -219,6 +174,8 @@ public:
 
     void RegisterFactoryFunction(string name, OutputPortInterface<T >* (*classFactoryFunction)(RTT::TaskContext *tc, const std::string& prefix) )
     {
+        //std::cout << "OutputPortInterfaceFactory::RegisterFactoryFunction: " << name << std::endl;    // debug
+
         // register the class factory function
         factoryFunctionRegistry[name] = classFactoryFunction;
     }
@@ -256,31 +213,6 @@ public:
 #define REGISTER_InputPortInterface( CLASS, NAME ) static interface_ports::InputPortInterfaceRegistrar<CLASS > EXPAND_input_registrar_(__LINE__)(NAME);
 
 #define REGISTER_OutputPortInterface( CLASS, NAME ) static interface_ports::OutputPortInterfaceRegistrar<CLASS > EXPAND_output_registrar_(__LINE__)(NAME);
-
-// data conversion stuff
-// this trick is from http://stackoverflow.com/questions/13842468/comma-in-c-c-macro
-template<typename T> struct argument_type;
-template<typename T, typename U> struct argument_type<T(U)> { typedef U type; };
-// e.g.: #define FOO(t,name) argument_type<void(t)>::type name
-
-#define REGISTER_DATA_CONVERSION(ROS_MSG_NAMESPACE, ROS_MSG_MSG, ROS_MSG_FIELD, ROS_T, ORO_T, ROS_ORO_CODE, ORO_ROS_CODE) class CONV_TO_ORO_##ROS_MSG_NAMESPACE##ROS_MSG_MSG##ROS_MSG_FIELD :\
-public interface_ports::OutputPortConv<argument_type<void(ROS_T)>::type, argument_type<void(ORO_T)>::type > {\
-public:\
-    typedef argument_type<void(ROS_T)>::type Container_;\
-    CONV_TO_ORO_##ROS_MSG_NAMESPACE##ROS_MSG_MSG##ROS_MSG_FIELD(RTT::TaskContext *tc, const std::string &port_name)\
-      : interface_ports::OutputPortConv<argument_type<void(ROS_T)>::type, argument_type<void(ORO_T)>::type >(tc, port_name) {}\
-    virtual void convert(const argument_type<void(ROS_T)>::type& ros, argument_type<void(ORO_T)>::type& oro) const {ROS_ORO_CODE}\
-};\
-REGISTER_OutputPortInterface(CONV_TO_ORO_##ROS_MSG_NAMESPACE##ROS_MSG_MSG##ROS_MSG_FIELD, #ROS_MSG_NAMESPACE"_"#ROS_MSG_MSG"_"#ROS_MSG_FIELD);\
-class CONV_TO_ROS_##ROS_MSG_NAMESPACE##ROS_MSG_MSG##ROS_MSG_FIELD : public interface_ports::InputPortConv<argument_type<void(ROS_T)>::type, argument_type<void(ORO_T)>::type > {\
-public:\
-    typedef argument_type<void(ROS_T)>::type Container_;\
-    CONV_TO_ROS_##ROS_MSG_NAMESPACE##ROS_MSG_MSG##ROS_MSG_FIELD(RTT::TaskContext *tc, const std::string &port_name)\
-      : interface_ports::InputPortConv<argument_type<void(ROS_T)>::type, argument_type<void(ORO_T)>::type >(tc, port_name) {}\
-    virtual void convert(const argument_type<void(ORO_T)>::type& oro, argument_type<void(ROS_T)>::type& ros) const {ORO_ROS_CODE}\
-};\
-REGISTER_InputPortInterface(CONV_TO_ROS_##ROS_MSG_NAMESPACE##ROS_MSG_MSG##ROS_MSG_FIELD, #ROS_MSG_NAMESPACE"_"#ROS_MSG_MSG"_"#ROS_MSG_FIELD);
-
 
 #endif  // __COMMON_INTERFACES_INTERFACE_PORTS_H__
 
