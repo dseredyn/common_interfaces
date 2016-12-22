@@ -40,49 +40,71 @@ namespace interface_ports {
 template <typename rosT, typename oroT >
 class InputPortConv : public InputPortInterface<rosT > {
 public:
-    explicit InputPortConv(RTT::TaskContext *tc, const std::string &port_name) :
-        port_(port_name + "_INPORT")
+    explicit InputPortConv(RTT::TaskContext *tc, const std::string &port_name)
+        : port_(new RTT::InputPort<oroT >(port_name + "_INPORT"))
+        , tc_(tc)
     {
-        tc->ports()->addPort(port_);
+        tc->ports()->addLocalPort(*port_);
     }
 
     virtual bool read(rosT &data_ros) {
         oroT data_oro;
-        if (port_.read(data_oro) != RTT::NewData) {
+        if (port_->read(data_oro, false) != RTT::NewData) {
             return false;
         }
-        convert(data_oro, data_ros);
+        //convert(data_oro, data_ros);
         return true;
     }
 
     virtual void convert(const oroT& data_oro, rosT& data_ros) const = 0;
 
+    bool removeUnconnectedPorts() {
+        if (!port_->connected()) {
+            tc_->ports()->removeLocalPort( port_->getName() );
+            port_.reset();
+            return true;
+        }
+        return false;
+    }
+
 protected:
 
-    RTT::InputPort<oroT > port_;
+    boost::shared_ptr<RTT::InputPort<oroT > > port_;
+    RTT::TaskContext* tc_;
 };
 
 template <typename rosT, typename oroT >
 class OutputPortConv : public OutputPortInterface<rosT > {
 public:
-    explicit OutputPortConv(RTT::TaskContext *tc, const std::string &port_name) :
-        port_(port_name + "_OUTPORT")
+    explicit OutputPortConv(RTT::TaskContext *tc, const std::string &port_name)
+        : port_(new RTT::OutputPort<oroT >(port_name + "_OUTPORT", false))
+        , tc_(tc)
     {
-        tc->ports()->addPort(port_);
+        tc->ports()->addLocalPort(*port_);
     }
 
     virtual bool write(const rosT &data_ros) {
         oroT data_oro;
-        convert(data_ros, data_oro);
-        port_.write(data_oro);
+        //convert(data_ros, data_oro);
+        port_->write(data_oro);
         return true;
     }
 
     virtual void convert(const rosT& data_ros, oroT& data_oro) const = 0;
 
+    bool removeUnconnectedPorts() {
+        if (!port_->connected()) {
+            tc_->ports()->removeLocalPort( port_->getName() );
+            port_.reset();
+            return true;
+        }
+        return false;
+    }
+
 protected:
 
-    RTT::OutputPort<oroT > port_;
+    boost::shared_ptr<RTT::OutputPort<oroT > > port_;
+    RTT::TaskContext* tc_;
 };
 
 };  // namespace interface_ports

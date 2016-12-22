@@ -48,6 +48,7 @@ public:
     {
         this->ports()->addPort(port_msg_out_);
         this->addOperation("getDiag", &MessageConcate::getDiag, this, RTT::ClientThread);
+        this->addOperation("removeUnconnectedPorts", &MessageConcate::removeUnconnectedPorts, this, RTT::ClientThread);
     }
 
     std::string getDiag() {
@@ -72,9 +73,13 @@ public:
         bool read_successful = in_.read(msg_);
         if (read_successful) {
             port_msg_out_.write(msg_);
-            diag_buf_ = msg_;
+//            diag_buf_ = msg_;
         }
         diag_buf_valid_ = read_successful;
+    }
+
+    bool removeUnconnectedPorts() {
+        in_.removeUnconnectedPorts();
     }
 
 private:
@@ -84,7 +89,7 @@ private:
     Container msg_;
     RTT::OutputPort<Container > port_msg_out_;
 
-    Container diag_buf_;
+//    Container diag_buf_;
     bool diag_buf_valid_;
 };
 

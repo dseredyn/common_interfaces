@@ -48,6 +48,7 @@ public:
     {
         this->ports()->addPort(port_msg_in_);
         this->addOperation("getDiag", &MessageSplit::getDiag, this, RTT::ClientThread);
+        this->addOperation("removeUnconnectedPorts", &MessageSplit::removeUnconnectedPorts, this, RTT::ClientThread);
     }
 
     std::string getDiag() {
@@ -72,12 +73,16 @@ public:
     void updateHook() {
         if (port_msg_in_.read(msg_) == RTT::NewData) {
             out_.write(msg_);
-            diag_buf_ = msg_;
+//            diag_buf_ = msg_;
             diag_buf_valid_ = true;
         }
         else {
             diag_buf_valid_ = false;
         }
+    }
+
+    bool removeUnconnectedPorts() {
+        out_.removeUnconnectedPorts();
     }
 
 private:
@@ -87,7 +92,7 @@ private:
     Container msg_;
     RTT::InputPort<Container > port_msg_in_;
 
-    Container diag_buf_;
+//    Container diag_buf_;
     bool diag_buf_valid_;
 };
 

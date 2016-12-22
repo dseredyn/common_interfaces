@@ -43,49 +43,75 @@ template <typename T >
 class InputPortInterface {
 public:
     virtual bool read(T &data) = 0;
+
+    virtual bool removeUnconnectedPorts() = 0;
 };
 
 template <typename T >
 class OutputPortInterface {
 public:
     virtual bool write(const T &data) = 0;
+
+    virtual bool removeUnconnectedPorts() = 0;
 };
 
 template <typename T >
 class InputPort : public InputPortInterface<T > {
 public:
-    explicit InputPort(RTT::TaskContext *tc, const std::string &port_name) :
-        port_(port_name + "_INPORT")
+    explicit InputPort(RTT::TaskContext *tc, const std::string &port_name)
+        : port_(new RTT::InputPort<T >(port_name + "_INPORT"))
+        , tc_(tc)
     {
-        tc->ports()->addPort(port_);
+        tc->ports()->addLocalPort(*port_);
     }
 
     virtual bool read(T &data) {
-        return (port_.read(data) == RTT::NewData);
+        return (port_->read(data, false) == RTT::NewData);
+    }
+
+    bool removeUnconnectedPorts() {
+        if (!port_->connected()) {
+            tc_->ports()->removeLocalPort( port_->getName() );
+            port_.reset();
+            return true;
+        }
+        return false;
     }
 
 protected:
 
-    RTT::InputPort<T > port_;
+    boost::shared_ptr<RTT::InputPort<T > > port_;
+    RTT::TaskContext* tc_;
 };
 
 template <typename T >
 class OutputPort : public OutputPortInterface<T > {
 public:
-    explicit OutputPort(RTT::TaskContext *tc, const std::string &port_name) :
-        port_(port_name + "_OUTPORT", true)
+    explicit OutputPort(RTT::TaskContext *tc, const std::string &port_name)
+        : port_(new RTT::OutputPort<T >(port_name + "_OUTPORT", false) )
+        , tc_(tc)
     {
-        tc->ports()->addPort(port_);
+        tc->ports()->addLocalPort(*port_);
     }
 
     virtual bool write(const T &data) {
-        port_.write(data);
+        port_->write(data);
         return true;
+    }
+
+    bool removeUnconnectedPorts() {
+        if (!port_->connected()) {
+            tc_->ports()->removeLocalPort( port_->getName() );
+            port_.reset();
+            return true;
+        }
+        return false;
     }
 
 protected:
 
-    RTT::OutputPort<T > port_;
+    boost::shared_ptr<RTT::OutputPort<T > > port_;
+    RTT::TaskContext* tc_;
 };
 
 template <typename T >
