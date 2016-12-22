@@ -52,13 +52,19 @@ public:
     }
 
     std::string getDiag() {
+        std::stringstream ss;
+        ss << "time: " << last_ports_time_;
+
         if (diag_buf_valid_) {
             //std::stringstream ss;
             //ros::message_operations::Printer<Container >::stream(ss, "", diag_buf_);
             //return ss.str();
-            return "<data ok>";
+            ss << ", <data ok>";
         }
-        return "<no obligatory data>";
+        else {
+            ss << ", <no obligatory data>";;
+        }
+        return ss.str();
     }
 
     bool configureHook() {
@@ -70,7 +76,10 @@ public:
     }
 
     void updateHook() {
+        RTT::os::TimeService::Seconds time1 = RTT::nsecs_to_Seconds(RTT::os::TimeService::Instance()->getNSecs());
         bool read_successful = in_.read(msg_);
+        RTT::os::TimeService::Seconds time2 = RTT::nsecs_to_Seconds(RTT::os::TimeService::Instance()->getNSecs());
+        last_ports_time_ = time2 - time1;
         if (read_successful) {
             port_msg_out_.write(msg_);
 //            diag_buf_ = msg_;
@@ -91,6 +100,8 @@ private:
 
 //    Container diag_buf_;
     bool diag_buf_valid_;
+
+    RTT::Seconds last_ports_time_;
 };
 
 
