@@ -52,7 +52,7 @@ public:
         if (port_->read(data_oro, false) != RTT::NewData) {
             return false;
         }
-        //convert(data_oro, data_ros);
+        convert(data_oro, data_ros);
         return true;
     }
 
@@ -85,7 +85,7 @@ public:
 
     virtual bool write(const rosT &data_ros) {
         oroT data_oro;
-        //convert(data_ros, data_oro);
+        convert(data_ros, data_oro);
         port_->write(data_oro);
         return true;
     }
