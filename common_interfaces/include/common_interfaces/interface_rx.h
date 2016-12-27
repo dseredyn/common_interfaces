@@ -45,12 +45,14 @@ using namespace RTT;
 template <class Container>
 class InterfaceRx: public RTT::TaskContext {
 public:
-    explicit InterfaceRx(const std::string& name) :
-        TaskContext(name, PreOperational),
-        shm_name_("TODO"),
-        buf_prev_(NULL),
-        event_port_(false),
-        port_msg_out_("msg_OUTPORT", false)
+    explicit InterfaceRx(const std::string& name)
+        : TaskContext(name, PreOperational)
+        , shm_name_("TODO")
+        , buf_prev_(NULL)
+        , event_port_(false)
+        , port_msg_out_("msg_OUTPORT", false)
+        , diag_data_received_(false)
+        , diag_no_data_cycles_(0)
     {
         this->ports()->addPort(port_msg_out_);
 
@@ -63,15 +65,27 @@ public:
         addProperty("event_port", event_port_);
     }
 
+    // this method in not RT-safe
     std::string getDiag() {
-    // this method may not be RT-safe
+        std::stringstream ss;
         if (diag_buf_valid_) {
-            //std::stringstream ss;
             //ros::message_operations::Printer<Container >::stream(ss, "", diag_buf_);
-            //return ss.str();
-            return "<data ok>";
+            ss << "<data ok>";
         }
-        return "<no data>";
+        else {
+            ss << "<no data>";
+
+            if (!diag_data_received_) {
+                ss << ", <never>";
+            }
+            else {
+                RTT::os::TimeService::Seconds last_recv_sec = RTT::nsecs_to_Seconds(last_recv_time_);
+                RTT::os::TimeService::Seconds now_sec = RTT::nsecs_to_Seconds(RTT::os::TimeService::Instance()->getNSecs());
+                RTT::Seconds interval = now_sec - last_recv_sec;
+                ss << ", <for: " << interval << "s, " << diag_no_data_cycles_ << "c>";
+            }
+        }
+        return ss.str();
     }
 
     bool pushBackPeerExecution(const std::string &peer_name) {
@@ -207,11 +221,17 @@ public:
                 // write received data to RTT port
                 port_msg_out_.write(*buf);
 
+                // Store update time
+                last_recv_time_ = RTT::os::TimeService::Instance()->getNSecs();
+                diag_data_received_ = true;
+                diag_no_data_cycles_ = 0;
+
                 receiving_data_ = true;
         }
         else {
             receiving_data_ = false;
             diag_buf_valid_ = false;
+            ++diag_no_data_cycles_;
         }
 
         if (event_port_) {
@@ -235,6 +255,10 @@ private:
 
     Container diag_buf_;
     bool diag_buf_valid_;
+
+    RTT::os::TimeService::nsecs last_recv_time_;
+    bool diag_data_received_;
+    uint32_t diag_no_data_cycles_;
 };
 
 
