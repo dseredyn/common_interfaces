@@ -171,10 +171,18 @@ public:
         shm_release_reader(re_);
     }
 
+    void stopHook() {
+        if (getTaskState() == TaskContext::Exception || getTaskState() == TaskContext::RunTimeError) {
+            recover();
+        }
+    }
+
     bool startHook() {
         void *pbuf = NULL;
 
-        int result = shm_reader_buffer_get(re_, &pbuf);
+        int result = 0;
+        result = shm_reader_buffer_get(re_, &pbuf);
+
         if (result < 0) {
             Logger::log() << Logger::Error << "shm_reader_buffer_get: error: " << result << Logger::endl;
             return false;
@@ -194,6 +202,10 @@ public:
         return true;
     }
 
+    void exceptionHook() {
+        recover();
+    }
+
     void updateHook() {
     //*
         void *pbuf = NULL;
@@ -204,6 +216,7 @@ public:
         timespec ts;
         clock_gettime(CLOCK_REALTIME, &ts);
         ++ts.tv_sec;
+
         buffer_valid = (shm_reader_buffer_timedwait(re_, &ts, &pbuf) == 0);
 
     /*/

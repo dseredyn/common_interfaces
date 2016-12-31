@@ -25,56 +25,33 @@
  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-#include "test_deployer.h"
-#include <rtt/Logger.hpp>
+#ifndef COMMON_INTERFACES_TEST_CONTAINER_UTILS_H_
+#define COMMON_INTERFACES_TEST_CONTAINER_UTILS_H_
 
-namespace message_tests {
+#include "common_interfaces_test_msgs/Container.h"
 
-using namespace RTT;
+class DeployerRxStatus {
+public:
+    bool any_read_successful_;
+    bool checksum_ok_;
+    bool all_reads_successful_;
 
-  TestDeployer::TestDeployer(const std::string& name)
-      : dc_(new OCL::DeploymentComponent(name)) {
-
-    char* comp_path = getenv("RTT_COMPONENT_PATH");
-//    Logger::log() << Logger::Error << "RTT_COMPONENT_PATH=" << std::string(comp_path) << Logger::endl;
-    
-    RTT::Property<std::string >* prop = dynamic_cast<RTT::Property<std::string >* >(dc_->getProperty("RTT_COMPONENT_PATH"));
-    prop->set(comp_path);
-
-    dc_->configure();
-
-    dc_->import("rtt_ros");
-
-    RTT::Service::shared_ptr ros = RTT::internal::GlobalService::Instance()->getService("ros");
-    if (!ros) {
-      Logger::log() << Logger::Error << "rtt_ros: ros service could not be loaded (NULL pointer)" << Logger::endl;
+    bool isEqual(const DeployerRxStatus& other) const {
+        return any_read_successful_ == other.any_read_successful_
+            && checksum_ok_ == other.checksum_ok_
+            && all_reads_successful_ == other.all_reads_successful_;
     }
 
-    ros_import_ = ros->getOperation("import");
-  }
+    DeployerRxStatus()
+        : any_read_successful_(false)
+        , checksum_ok_(false)
+        , all_reads_successful_(false)
+    {}
+};
 
-  bool TestDeployer::import(const std::string& name) {
-    if (!ros_import_.ready()) {
-      Logger::log() << Logger::Error << "ros.import operation is not ready" << Logger::endl;
-      return false;
-    }
 
-    if (!ros_import_(name)) {
-      Logger::log() << Logger::Error << "could not import: " << name << Logger::endl;
-      return false;
-    }
+uint32_t calculateChecksum(common_interfaces_test_msgs::Container& cont_in);
+void randomContainerData(common_interfaces_test_msgs::Container& cont_in);
 
-    return true;
-  }
-
-  boost::shared_ptr<OCL::DeploymentComponent > TestDeployer::getDc() {
-    return dc_;
-  }
-
-  TestDeployer& TestDeployer::Instance() {
-    static TestDeployer d("test_deployer");
-    return d;
-  }
-
-}   // namespace message_tests
+#endif  // COMMON_INTERFACES_TEST_CONTAINER_UTILS_H_
 
