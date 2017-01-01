@@ -35,8 +35,8 @@ if(CATKIN_ENABLE_TESTING)
         ${catkin_LIBRARIES}
         ${USE_OROCOS_LIBRARIES})
 
-#    catkin_add_gtest(msg_unittest tests/gtest_main.cc tests/msg_concate_unittest.cpp tests/msg_split_unittest.cpp tests/msg_rx_tx.cpp tests/test_deployer.cpp)
-    catkin_add_gtest(msg_unittest tests/gtest_main.cc tests/msg_rx_tx.cpp tests/test_deployer.cpp)
+    catkin_add_gtest(msg_unittest tests/gtest_main.cc tests/msg_concate_unittest.cpp tests/msg_split_unittest.cpp tests/msg_rx_tx.cpp tests/test_deployer.cpp)
+#    catkin_add_gtest(msg_unittest tests/gtest_main.cc tests/msg_rx_tx.cpp tests/test_deployer.cpp)
     target_link_libraries(msg_unittest
         ${catkin_LIBRARIES}
         ${USE_OROCOS_LIBRARIES})

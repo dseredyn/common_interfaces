@@ -32,23 +32,38 @@
 
 class DeployerRxStatus {
 public:
+    bool initialized_;
     bool any_read_successful_;
     bool checksum_ok_;
     bool all_reads_successful_;
 
     bool isEqual(const DeployerRxStatus& other) const {
-        return any_read_successful_ == other.any_read_successful_
+        return initialized_ == other.initialized_
+            && any_read_successful_ == other.any_read_successful_
             && checksum_ok_ == other.checksum_ok_
             && all_reads_successful_ == other.all_reads_successful_;
     }
 
     DeployerRxStatus()
-        : any_read_successful_(false)
+        : initialized_(false)
+        , any_read_successful_(false)
         , checksum_ok_(false)
         , all_reads_successful_(false)
     {}
 };
 
+class DeployerTxStatus {
+public:
+    bool initialized_;
+
+    bool isEqual(const DeployerRxStatus& other) const {
+        return initialized_ == other.initialized_;
+    }
+
+    DeployerTxStatus()
+        : initialized_(false)
+    {}
+};
 
 uint32_t calculateChecksum(common_interfaces_test_msgs::Container& cont_in);
 void randomContainerData(common_interfaces_test_msgs::Container& cont_in);

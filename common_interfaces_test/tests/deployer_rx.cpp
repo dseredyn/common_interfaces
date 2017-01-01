@@ -26,7 +26,6 @@
 */
 
 #include <limits.h>
-//#include <pthread.h>
 #include <fcntl.h>
 #include <stdio.h>
 #include <unistd.h>
@@ -63,10 +62,10 @@ public:
     }
 
     void stopHook() {
-        std::cout << "TestComponentIn.stopHook: state: " << (int)getTaskState() << std::endl;
+//        std::cout << "TestComponentIn.stopHook: state: " << (int)getTaskState() << std::endl;
         if (getTaskState() == TaskContext::Exception || getTaskState() == TaskContext::RunTimeError) {
             recover();
-            std::cout << "TestComponentIn.stopHook: state after recover: " << (int)getTaskState() << std::endl;
+//            std::cout << "TestComponentIn.stopHook: state after recover: " << (int)getTaskState() << std::endl;
         }
     }
 
@@ -164,40 +163,49 @@ int main(int argc, char *argv[]) {
 
     message_tests::TestDeployer& d = message_tests::TestDeployer::Instance();
     if (!d.getDc()->import("rtt_common_interfaces_test_subsystem_ports")) {
+        std::cout << "could not import rtt_common_interfaces_test_subsystem_ports" << std::endl;
         return 1;
     }
 
     if (!d.getDc()->loadComponent("rx", "common_interfaces_test_msgs_ContainerRx")) {
+        std::cout << "could not load component rx" << std::endl;
         return 2;
     }
     RTT::TaskContext *rx = d.getDc()->getPeer("rx");
     if (rx == NULL) {
+        std::cout << "could not get component rx" << std::endl;
         return 3;
     }
     rx->setActivity( new RTT::extras::SlaveActivity() );
     RTT::Property<std::string >* rx_channel_name = dynamic_cast<RTT::Property<std::string >* >(rx->getProperty("channel_name"));
     if (rx_channel_name == NULL) {
+        std::cout << "could not set channel name" << std::endl;
         return 4;
     }
-    rx_channel_name->set("channel");
+    rx_channel_name->set("channel1");
     if (!rx->configure()) {
+        std::cout << "could not configure rx" << std::endl;
         return 5;
     }
 
     TestComponentIn<common_interfaces_test_msgs::Container > test_in("test_in");
     test_in.setActivity( new RTT::extras::SlaveActivity() );
     if (!test_in.connectPort(rx)) {
+        std::cout << "could not connect ports" << std::endl;
         return 6;
     }
     if (!test_in.configure()) {
+        std::cout << "could not configure test component" << std::endl;
         return 7;
     }
 
     if (!rx->start()) {
+        std::cout << "could not start rx component" << std::endl;
         return 8;
     }
 
     if (!test_in.start()) {
+        std::cout << "could not start test component" << std::endl;
         return 9;
     }
 
@@ -230,6 +238,9 @@ int main(int argc, char *argv[]) {
     bool any_read_successful = false;
     bool all_checksums_ok = true;
     bool all_reads_successful = true;
+
+    status.initialized_ = true;
+    write(status_pipe_fd, &status , sizeof(status));
 
     while (!isStopped()) {
         DeployerRxStatus status_prev = status;
@@ -267,7 +278,7 @@ int main(int argc, char *argv[]) {
     d.getDc()->kickOutComponent("rx");
     __os_exit();
 
-    std::cout << "closed" << std::endl;
+    close(status_pipe_fd);
 
     return 0;
 }

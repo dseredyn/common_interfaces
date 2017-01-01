@@ -26,7 +26,8 @@
 */
 
 #include <limits.h>
-#include <pthread.h>
+#include <fcntl.h>
+#include <stdio.h>
 #include <unistd.h>
 #include <time.h>
 #include <signal.h>
@@ -97,11 +98,11 @@ void func_stop(union sigval) {
 }
 
 void printUsage() {
-    std::cout << "usage: deployer_tx stop|term time_sec time_nsec" << std::endl;
+    std::cout << "usage: deployer_tx stop|term time_sec time_nsec status_pipe_name" << std::endl;
 }
 
 int main(int argc, char *argv[]) {
-    if (argc != 4) {
+    if (argc != 5) {
         std::cout << "wrong number of args" << std::endl;
         printUsage();
         return -1;
@@ -130,6 +131,16 @@ int main(int argc, char *argv[]) {
         return -3;
     }
 
+    const std::string status_pipe_name(argv[4]);
+    int status_pipe_fd;
+    status_pipe_fd = open(status_pipe_name.c_str() , O_WRONLY);
+    if (status_pipe_fd < 0) {
+        std::cout << "could not open pipe \'" << status_pipe_name << "\'" << std::endl;
+        return -4;
+    }
+    DeployerTxStatus status = DeployerTxStatus();
+    write(status_pipe_fd, &status , sizeof(status));
+
     if (__os_init(argc, argv) != 0) {
         std::cout << "could not initialize rtt" << std::endl;
         return -4;
@@ -152,7 +163,7 @@ int main(int argc, char *argv[]) {
     if (tx_channel_name == NULL) {
         return 4;
     }
-    tx_channel_name->set("channel");
+    tx_channel_name->set("channel1");
     if (!tx->configure()) {
         return 5;
     }
@@ -200,6 +211,9 @@ int main(int argc, char *argv[]) {
     time_stop.it_value.tv_nsec = nsec;
     timer_settime(timer_stop, 0, &time_stop, NULL);
 
+    status.initialized_ = true;
+    write(status_pipe_fd, &status , sizeof(status));
+
     while (!isStopped()) {
 //        std::cout << "loop tx" << std::endl;
         Container cont;
@@ -224,7 +238,7 @@ int main(int argc, char *argv[]) {
     d.getDc()->kickOutComponent("tx");
     __os_exit();
 
-    std::cout << "closed" << std::endl;
+    close(status_pipe_fd);
 
     return 0;
 }
