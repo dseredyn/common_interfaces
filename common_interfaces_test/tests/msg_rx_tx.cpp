@@ -38,11 +38,18 @@
 #include "test_deployer.h"
 #include "container_utils.h"
 
+#include "shm_comm/shm_channel.h"
+
 namespace message_concate_tests {
 
 using namespace common_interfaces_test_msgs;
 
-void executeTxRxTest(bool terminate, int sec, long nsec) {
+void executeTxRxTest(bool remove_channel, bool terminate, int sec, long nsec) {
+
+        if (remove_channel) {
+            shm_remove_channel("channel");
+        }
+
         const std::string fifo_rx_status("/tmp/common_interfaces_test_fifo_rx_status");
         const std::string fifo_tx_status("/tmp/common_interfaces_test_fifo_tx_status");
         mkfifo(fifo_rx_status.c_str(), 0666);
@@ -94,16 +101,28 @@ void executeTxRxTest(bool terminate, int sec, long nsec) {
 }
 
 // Tests MessageRx/MessageTx classes
+TEST(MessageRxTxTest, CreateTxRxTermRm) {
+    for (int i = 0; i < 20; ++i) {
+        executeTxRxTest(true, true, 0, 100000000);
+    }
+}
+
 TEST(MessageRxTxTest, CreateTxRxTerm) {
-    for (int i = 0; i < 10; ++i) {
-        executeTxRxTest(true, 0, 300000000);
+    for (int i = 0; i < 20; ++i) {
+        executeTxRxTest(false, true, 0, 100000000);
     }
 }
 
 // Tests MessageRx/MessageTx classes
+TEST(MessageRxTxTest, CreateTxRxStopRm) {
+    for (int i = 0; i < 20; ++i) {
+        executeTxRxTest(true, false, 0, 100000000);
+    }
+}
+
 TEST(MessageRxTxTest, CreateTxRxStop) {
-    for (int i = 0; i < 10; ++i) {
-        executeTxRxTest(false, 0, 300000000);
+    for (int i = 0; i < 20; ++i) {
+        executeTxRxTest(false, false, 0, 100000000);
     }
 }
 
@@ -177,12 +196,12 @@ void executeTxTest(bool terminate, int rx_sec, long rx_nsec, int tx_sec, long tx
 
 // Tests MessageRx/MessageTx classes
 TEST(MessageRxTxTest, CreateTxTerm) {
-    executeTxTest(true, 10, 0, 0, 300000000);
+    executeTxTest(true, 10, 0, 0, 100000000);
 }
 
 // Tests MessageRx/MessageTx classes
 TEST(MessageRxTxTest, CreateTxStop) {
-    executeTxTest(false, 10, 0, 0, 300000000);
+    executeTxTest(false, 10, 0, 0, 100000000);
 }
 
 void executeRxTest(bool terminate, int rx_sec, long rx_nsec, int tx_sec, long tx_nsec) {
@@ -247,12 +266,12 @@ void executeRxTest(bool terminate, int rx_sec, long rx_nsec, int tx_sec, long tx
 
 // Tests MessageRx/MessageTx classes
 TEST(MessageRxTxTest, CreateRxTerm) {
-    executeRxTest(true, 0, 300000000, 10, 0);
+    executeRxTest(true, 0, 100000000, 10, 0);
 }
 
 // Tests MessageRx/MessageTx classes
 TEST(MessageRxTxTest, CreateRxStop) {
-    executeRxTest(false, 0, 300000000, 10, 0);
+    executeRxTest(false, 0, 100000000, 10, 0);
 }
 
 };  // namespace message_concate_tests

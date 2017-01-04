@@ -53,6 +53,7 @@ public:
         , port_msg_out_("msg_OUTPORT", false)
         , diag_data_received_(false)
         , diag_no_data_cycles_(0)
+        , timeout_s_(1.0)
     {
         this->ports()->addPort(port_msg_out_);
 
@@ -63,6 +64,7 @@ public:
 
         addProperty("channel_name", param_channel_name_);
         addProperty("event_port", event_port_);
+        addProperty("timeout_s", timeout_s_);
     }
 
     // this method in not RT-safe
@@ -215,7 +217,16 @@ public:
 
         timespec ts;
         clock_gettime(CLOCK_REALTIME, &ts);
-        ++ts.tv_sec;
+
+        int timeout_sec = (int)timeout_s_;
+        int timeout_nsec = (int)((timeout_s_ - (double)timeout_sec) * 1000000000.0);
+        
+        ts.tv_sec += timeout_sec;
+        ts.tv_nsec += timeout_nsec;
+        if (ts.tv_nsec >= 1000000000) {
+            ts.tv_nsec -= 1000000000;
+            ++ts.tv_sec;
+        }
 
         buffer_valid = (shm_reader_buffer_timedwait(re_, &ts, &pbuf) == 0);
 
@@ -257,6 +268,7 @@ private:
     // properties
     std::string param_channel_name_;
     bool event_port_;
+    double timeout_s_;
     
     std::string shm_name_;
 

@@ -163,7 +163,7 @@ int main(int argc, char *argv[]) {
     if (tx_channel_name == NULL) {
         return 4;
     }
-    tx_channel_name->set("channel1");
+    tx_channel_name->set("channel");
     if (!tx->configure()) {
         return 5;
     }

@@ -182,7 +182,15 @@ int main(int argc, char *argv[]) {
         std::cout << "could not set channel name" << std::endl;
         return 4;
     }
-    rx_channel_name->set("channel1");
+    rx_channel_name->set("channel");
+
+    RTT::Property<double >* rx_timeout_s = dynamic_cast<RTT::Property<double >* >(rx->getProperty("timeout_s"));
+    if (rx_timeout_s == NULL) {
+        std::cout << "could not set rx timeout" << std::endl;
+        return 4;
+    }
+    rx_timeout_s->set(0.1);
+
     if (!rx->configure()) {
         std::cout << "could not configure rx" << std::endl;
         return 5;
