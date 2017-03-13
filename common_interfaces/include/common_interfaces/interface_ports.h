@@ -62,7 +62,7 @@ public:
         : port_(new RTT::InputPort<T >(port_name + "_INPORT"))
         , tc_(tc)
     {
-        tc->ports()->addLocalPort(*port_);
+        tc->ports()->addPort(*port_);
     }
 
     virtual bool read(T &data) {
@@ -71,7 +71,7 @@ public:
 
     bool removeUnconnectedPorts() {
         if (!port_->connected()) {
-            tc_->ports()->removeLocalPort( port_->getName() );
+            tc_->ports()->removePort( port_->getName() );
             port_.reset();
             return true;
         }
@@ -91,7 +91,7 @@ public:
         : port_(new RTT::OutputPort<T >(port_name + "_OUTPORT", false) )
         , tc_(tc)
     {
-        tc->ports()->addLocalPort(*port_);
+        tc->ports()->addPort(*port_);
     }
 
     virtual bool write(const T &data) {
@@ -101,7 +101,7 @@ public:
 
     bool removeUnconnectedPorts() {
         if (!port_->connected()) {
-            tc_->ports()->removeLocalPort( port_->getName() );
+            tc_->ports()->removePort( port_->getName() );
             port_.reset();
             return true;
         }

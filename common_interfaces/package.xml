@@ -14,9 +14,12 @@
   <build_depend>ocl</build_depend>
   <build_depend>rtt_ros</build_depend>
   <build_depend>shm_comm</build_depend>
+  <build_depend>rtt_rosclock</build_depend>
 
   <run_depend>rtt</run_depend>
   <run_depend>ocl</run_depend>
   <run_depend>rtt_ros</run_depend>
   <run_depend>shm_comm</run_depend>
+  <run_depend>rtt_rosclock</run_depend>
+
 </package>

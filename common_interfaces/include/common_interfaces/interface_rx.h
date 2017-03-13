@@ -39,6 +39,7 @@
 #include "rtt/Component.hpp"
 #include "rtt/Logger.hpp"
 #include <rtt/extras/SlaveActivity.hpp>
+#include <rtt_rosclock/rtt_rosclock.h>
 
 using namespace RTT;
 
@@ -49,22 +50,31 @@ public:
         : TaskContext(name, PreOperational)
         , shm_name_("TODO")
         , buf_prev_(NULL)
-        , event_port_(false)
         , port_msg_out_("msg_OUTPORT", false)
+        , no_data_out_("no_data_OUTPORT")
         , diag_data_received_(false)
         , diag_no_data_cycles_(0)
-        , timeout_s_(1.0)
+        , no_input_data_cycles_(0)
+        , no_input_data_max_cycles_(100)
+        , event_(false)
+        , period_min_(0.0)
+        , period_avg_(0.0)
+        , period_max_(0.0)
     {
         this->ports()->addPort(port_msg_out_);
+        this->ports()->addPort(no_data_out_);
 
         this->addOperation("pushBackPeerExecution", &InterfaceRx::pushBackPeerExecution, this, RTT::ClientThread)
             .doc("enable HW operation");
 
         this->addOperation("getDiag", &InterfaceRx::getDiag, this, RTT::ClientThread);
 
+        addProperty("event", event_);
+        addProperty("period_min", period_min_);
+        addProperty("period_avg", period_avg_);
+        addProperty("period_max", period_max_);
+
         addProperty("channel_name", param_channel_name_);
-        addProperty("event_port", event_port_);
-        addProperty("timeout_s", timeout_s_);
     }
 
     // this method in not RT-safe
@@ -104,12 +114,35 @@ public:
         Logger::In in("InterfaceRx::configureHook");
 
         if (param_channel_name_.empty()) {
-            Logger::log() << Logger::Error << "parameter channel_name is empty" << Logger::endl;
+            Logger::log() << Logger::Error << "parameter \'channel_name\' is empty" << Logger::endl;
             return false;
         }
 
+        if (event_) {
+            if (period_min_ == 0.0) {
+                Logger::log() << Logger::Error << "parameter \'period_min\' is not set (0.0)" << Logger::endl;
+                return false;
+            }
+            if (period_avg_ == 0.0) {
+                Logger::log() << Logger::Error << "parameter \'period_avg\' is not set (0.0)" << Logger::endl;
+                return false;
+            }
+            if (period_max_ == 0.0) {
+                Logger::log() << Logger::Error << "parameter \'period_max\' is not set (0.0)" << Logger::endl;
+                return false;
+            }
+
+            if (period_min_ >= period_avg_) {
+                Logger::log() << Logger::Error << "parameter \'period_min\' should be < than \'period_avg\': " << period_min_ << ", " << period_avg_ << Logger::endl;
+                return false;
+            }
+            if (period_avg_ >= period_max_) {
+                Logger::log() << Logger::Error << "parameter \'period_avg_\' should be < than \'period_max_\': " << period_avg_ << ", " << period_max_ << Logger::endl;
+                return false;
+            }
+        }
+
         Logger::log() << Logger::Info << "parameter channel_name is set to: \'" << param_channel_name_ << "\'" << Logger::endl;
-        Logger::log() << Logger::Info << "parameter event_port is set to: " << (event_port_?"true":"false") << Logger::endl;
 
         shm_name_ = param_channel_name_;
 
@@ -192,14 +225,10 @@ public:
 
         buf_prev_ = reinterpret_cast<Container*>( pbuf );
 
-        receiving_data_ = false;
-
         diag_buf_valid_ = false;
-        diag_buf_ = Container();
+        trigger();
 
-        if (event_port_) {
-            trigger();
-        }
+        last_read_successful_ = false;
 
         return true;
     }
@@ -209,83 +238,142 @@ public:
     }
 
     void updateHook() {
-    //*
-        void *pbuf = NULL;
-        Container *buf = NULL;
 
-        bool buffer_valid = false;
-
+        // get update time
+        ros::Time update_time = rtt_rosclock::host_now();
         timespec ts;
         clock_gettime(CLOCK_REALTIME, &ts);
 
-        int timeout_sec = (int)timeout_s_;
-        int timeout_nsec = (int)((timeout_s_ - (double)timeout_sec) * 1000000000.0);
-        
-        ts.tv_sec += timeout_sec;
-        ts.tv_nsec += timeout_nsec;
-        if (ts.tv_nsec >= 1000000000) {
-            ts.tv_nsec -= 1000000000;
-            ++ts.tv_sec;
-        }
+        void *pbuf = NULL;
+        Container *buf = NULL;
 
-        buffer_valid = (shm_reader_buffer_timedwait(re_, &ts, &pbuf) == 0);
+        if (event_) {
+            double timeout_s;
+            if (last_read_successful_) {
+                timeout_s = period_max_;
+            }
+            else {
+                timeout_s = period_avg_;
+            }
 
-    /*/
-        Container *buf = reinterpret_cast<Container*>( reader_buffer_get(&re_) );
-    //*/
+            int timeout_sec = (int)timeout_s;
+            int timeout_nsec = (int)((timeout_s - (double)timeout_sec) * 1000000000.0);
 
-        if ( buffer_valid
-            && ((buf = reinterpret_cast<Container*>( pbuf )) != buf_prev_) )
-        {
+            ts.tv_sec += timeout_sec;
+            ts.tv_nsec += timeout_nsec;
+            if (ts.tv_nsec >= 1000000000) {
+                ts.tv_nsec -= 1000000000;
+                ++ts.tv_sec;
+            }
+
+            int read_status = shm_reader_buffer_timedwait(re_, &ts, &pbuf);
+
+            ros::Time read_time = rtt_rosclock::host_now();
+            double read_interval = (read_time - update_time).toSec();
+
+            if (read_status == SHM_TIMEOUT) {
+                diag_buf_valid_ = false;
+                last_read_successful_ = false;
+                no_data_out_.write(true);
+                // do not wait
+            }
+            else if (read_status == 0 && ((buf = reinterpret_cast<Container*>( pbuf )) != buf_prev_)) {
+                diag_buf_valid_ = true;
+                last_read_successful_ = true;
                 // save the pointer of buffer
                 buf_prev_ = buf;
-
-                diag_buf_ = *buf;
-                diag_buf_valid_ = true;
-                // write received data to RTT port
                 port_msg_out_.write(*buf);
-
-                // Store update time
-                last_recv_time_ = RTT::os::TimeService::Instance()->getNSecs();
-                diag_data_received_ = true;
-                diag_no_data_cycles_ = 0;
-
-                receiving_data_ = true;
+                if (read_interval < period_min_) {
+                    usleep( int((period_min_ - read_interval)*1000000.0) );
+                }
+            }
+            else if (read_status > 0) {
+                diag_buf_valid_ = false;
+                last_read_successful_ = false;
+                no_data_out_.write(true);
+                if (read_interval < period_avg_) {
+                    usleep( int((period_avg_ - read_interval)*1000000.0) );
+                }
+            }
+            else {
+                diag_buf_valid_ = false;
+                Logger::log() << Logger::Error << getName() << " shm_reader_buffer_timedwait status: " << read_status << Logger::endl;
+                error();
+                return;
+            }
         }
         else {
-            receiving_data_ = false;
-            diag_buf_valid_ = false;
-            ++diag_no_data_cycles_;
+            double timeout_s = 1.0;
+
+            int timeout_sec = (int)timeout_s;
+            int timeout_nsec = (int)((timeout_s - (double)timeout_sec) * 1000000000.0);
+
+            ts.tv_sec += timeout_sec;
+            ts.tv_nsec += timeout_nsec;
+            if (ts.tv_nsec >= 1000000000) {
+                ts.tv_nsec -= 1000000000;
+                ++ts.tv_sec;
+            }
+
+            int read_status = shm_reader_buffer_timedwait(re_, &ts, &pbuf);
+
+            if (read_status == SHM_TIMEOUT) {
+                diag_buf_valid_ = false;
+            }
+            else if (read_status == 0 && ((buf = reinterpret_cast<Container*>( pbuf )) != buf_prev_)) {
+                diag_buf_valid_ = true;
+                // save the pointer of buffer
+                buf_prev_ = buf;
+                port_msg_out_.write(*buf);
+            }
+            else if (read_status > 0) {
+                diag_buf_valid_ = false;
+            }
+            else {
+                diag_buf_valid_ = false;
+                Logger::log() << Logger::Error << getName() << " shm_reader_buffer_timedwait status: " << read_status << Logger::endl;
+                error();
+                return;
+            }
+
         }
 
-        if (event_port_) {
-            trigger();
-        }
+        trigger();
     }
 
 private:
 
     // properties
     std::string param_channel_name_;
-    bool event_port_;
-    double timeout_s_;
-    
+
+    bool event_;
+    double period_min_;
+    double period_avg_;
+    double period_max_;
+
     std::string shm_name_;
 
     shm_reader_t* re_;
     Container *buf_prev_;
-    bool receiving_data_;
+    bool last_read_successful_;
 
     RTT::OutputPort<Container > port_msg_out_;
 
-    Container diag_buf_;
+    RTT::OutputPort<bool > no_data_out_;
+
+
+//    Container diag_buf_;
     bool diag_buf_valid_;
 
     RTT::os::TimeService::nsecs last_recv_time_;
     bool diag_data_received_;
     uint32_t diag_no_data_cycles_;
-};
 
+    uint32_t no_input_data_cycles_;
+    uint32_t no_input_data_max_cycles_;
+
+    ros::Time last_update_time_;
+};
 
 #endif  // COMMON_INTERFACES_INTERFACE_RX_H__
 
