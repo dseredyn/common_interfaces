@@ -143,6 +143,10 @@ public:
         }
 
         Logger::log() << Logger::Info << "parameter channel_name is set to: \'" << param_channel_name_ << "\'" << Logger::endl;
+        Logger::log() << Logger::Info << "parameter event is set to: \'" << (event_?"true":"false") << Logger::endl;
+        Logger::log() << Logger::Info << "parameter \'period_min\' is set to: " << period_min_ << Logger::endl;
+        Logger::log() << Logger::Info << "parameter \'period_avg\' is set to: " << period_avg_ << Logger::endl;
+        Logger::log() << Logger::Info << "parameter \'period_max\' is set to: " << period_max_ << Logger::endl;
 
         shm_name_ = param_channel_name_;
 
