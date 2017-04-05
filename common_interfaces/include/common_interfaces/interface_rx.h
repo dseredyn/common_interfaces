@@ -30,15 +30,11 @@
 
 #include "shm_comm/shm_channel.h"
 
-#include <cstring>
-
 #include <vector>
 #include <string>
 
 #include "rtt/RTT.hpp"
-#include "rtt/Component.hpp"
 #include "rtt/Logger.hpp"
-#include <rtt/extras/SlaveActivity.hpp>
 #include <rtt_rosclock/rtt_rosclock.h>
 
 using namespace RTT;
@@ -52,10 +48,6 @@ public:
         , buf_prev_(NULL)
         , port_msg_out_("msg_OUTPORT", false)
         , no_data_out_("no_data_OUTPORT")
-        , diag_data_received_(false)
-        , diag_no_data_cycles_(0)
-        , no_input_data_cycles_(0)
-        , no_input_data_max_cycles_(100)
         , event_(false)
         , period_min_(0.0)
         , period_avg_(0.0)
@@ -63,9 +55,6 @@ public:
     {
         this->ports()->addPort(port_msg_out_);
         this->ports()->addPort(no_data_out_);
-
-        this->addOperation("pushBackPeerExecution", &InterfaceRx::pushBackPeerExecution, this, RTT::ClientThread)
-            .doc("enable HW operation");
 
         this->addOperation("getDiag", &InterfaceRx::getDiag, this, RTT::ClientThread);
 
@@ -87,27 +76,12 @@ public:
         else {
             ss << "<no data>";
 
-            if (!diag_data_received_) {
-                ss << ", <never>";
-            }
-            else {
-                RTT::os::TimeService::Seconds last_recv_sec = RTT::nsecs_to_Seconds(last_recv_time_);
-                RTT::os::TimeService::Seconds now_sec = RTT::nsecs_to_Seconds(RTT::os::TimeService::Instance()->getNSecs());
-                RTT::Seconds interval = now_sec - last_recv_sec;
-                ss << ", <for: " << interval << "s, " << diag_no_data_cycles_ << "c>";
-            }
+            RTT::os::TimeService::Seconds last_recv_sec = RTT::nsecs_to_Seconds(last_recv_time_);
+            RTT::os::TimeService::Seconds now_sec = RTT::nsecs_to_Seconds(RTT::os::TimeService::Instance()->getNSecs());
+            RTT::Seconds interval = now_sec - last_recv_sec;
+            ss << ", <for: " << interval << "s>";
         }
         return ss.str();
-    }
-
-    bool pushBackPeerExecution(const std::string &peer_name) {
-        Logger::In in("InterfaceRx::pushBackPeerExecution");
-        if (isConfigured() || isRunning()) {
-            Logger::log() << Logger::Warning << "this operation should be invoked before configure"
-                          << Logger::endl;
-            return false;
-        }
-        return true;
     }
 
     bool configureHook() {
@@ -365,16 +339,9 @@ private:
 
     RTT::OutputPort<bool > no_data_out_;
 
-
-//    Container diag_buf_;
     bool diag_buf_valid_;
 
     RTT::os::TimeService::nsecs last_recv_time_;
-    bool diag_data_received_;
-    uint32_t diag_no_data_cycles_;
-
-    uint32_t no_input_data_cycles_;
-    uint32_t no_input_data_max_cycles_;
 
     ros::Time last_update_time_;
 };
