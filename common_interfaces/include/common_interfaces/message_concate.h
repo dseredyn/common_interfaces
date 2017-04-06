@@ -49,6 +49,14 @@ public:
         this->ports()->addPort(port_msg_out_);
         this->addOperation("getDiag", &MessageConcate::getDiag, this, RTT::ClientThread);
         this->addOperation("removeUnconnectedPorts", &MessageConcate::removeUnconnectedPorts, this, RTT::ClientThread);
+
+        Logger::In in(std::string("MessageConcate::MessageConcate (") + name + ")");
+
+        RTT::DataFlowInterface::Ports p = this->ports()->getPorts();
+        log(RTT::Info) << "Ports:" << Logger::endl;
+        for (int i = 0; i < p.size(); ++i) {
+            log(RTT::Info) << "    " << p[i]->getName() << Logger::endl;
+        }
     }
 
     std::string getDiag() {
