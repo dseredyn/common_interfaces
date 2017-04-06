@@ -49,9 +49,10 @@ public:
         , port_msg_out_("msg_OUTPORT", false)
         , no_data_out_("no_data_OUTPORT")
         , event_(false)
+        , event_no_data_(false)
         , period_min_(0.0)
-        , period_avg_(0.0)
-        , period_max_(0.0)
+        , next_timeout_(0.0)
+        , first_timeout_(0.0)
     {
         this->ports()->addPort(port_msg_out_);
         this->ports()->addPort(no_data_out_);
@@ -59,9 +60,10 @@ public:
         this->addOperation("getDiag", &InterfaceRx::getDiag, this, RTT::ClientThread);
 
         addProperty("event", event_);
+        addProperty("event_no_data", event_no_data_);
         addProperty("period_min", period_min_);
-        addProperty("period_avg", period_avg_);
-        addProperty("period_max", period_max_);
+        addProperty("next_timeout", next_timeout_);
+        addProperty("first_timeout", first_timeout_);
 
         addProperty("channel_name", param_channel_name_);
     }
@@ -97,21 +99,21 @@ public:
                 Logger::log() << Logger::Error << "parameter \'period_min\' is not set (0.0)" << Logger::endl;
                 return false;
             }
-            if (period_avg_ == 0.0) {
-                Logger::log() << Logger::Error << "parameter \'period_avg\' is not set (0.0)" << Logger::endl;
+            if (next_timeout_ == 0.0) {
+                Logger::log() << Logger::Error << "parameter \'next_timeout\' is not set (0.0)" << Logger::endl;
                 return false;
             }
-            if (period_max_ == 0.0) {
-                Logger::log() << Logger::Error << "parameter \'period_max\' is not set (0.0)" << Logger::endl;
+            if (first_timeout_ == 0.0) {
+                Logger::log() << Logger::Error << "parameter \'first_timeout\' is not set (0.0)" << Logger::endl;
                 return false;
             }
 
-            if (period_min_ >= period_avg_) {
-                Logger::log() << Logger::Error << "parameter \'period_min\' should be < than \'period_avg\': " << period_min_ << ", " << period_avg_ << Logger::endl;
+            if (period_min_ >= next_timeout_) {
+                Logger::log() << Logger::Error << "parameter \'period_min\' should be < than \'next_timeout\': " << period_min_ << ", " << next_timeout_ << Logger::endl;
                 return false;
             }
-            if (period_avg_ >= period_max_) {
-                Logger::log() << Logger::Error << "parameter \'period_avg_\' should be < than \'period_max_\': " << period_avg_ << ", " << period_max_ << Logger::endl;
+            if (next_timeout_ >= first_timeout_) {
+                Logger::log() << Logger::Error << "parameter \'next_timeout\' should be < than \'first_timeout\': " << next_timeout_ << ", " << first_timeout_ << Logger::endl;
                 return false;
             }
         }
@@ -119,8 +121,8 @@ public:
         Logger::log() << Logger::Info << "parameter channel_name is set to: \'" << param_channel_name_ << "\'" << Logger::endl;
         Logger::log() << Logger::Info << "parameter event is set to: \'" << (event_?"true":"false") << Logger::endl;
         Logger::log() << Logger::Info << "parameter \'period_min\' is set to: " << period_min_ << Logger::endl;
-        Logger::log() << Logger::Info << "parameter \'period_avg\' is set to: " << period_avg_ << Logger::endl;
-        Logger::log() << Logger::Info << "parameter \'period_max\' is set to: " << period_max_ << Logger::endl;
+        Logger::log() << Logger::Info << "parameter \'next_timeout\' is set to: " << next_timeout_ << Logger::endl;
+        Logger::log() << Logger::Info << "parameter \'first_timeout\' is set to: " << first_timeout_ << Logger::endl;
 
         shm_name_ = param_channel_name_;
 
@@ -228,10 +230,10 @@ public:
         if (event_) {
             double timeout_s;
             if (last_read_successful_) {
-                timeout_s = period_max_;
+                timeout_s = first_timeout_;
             }
             else {
-                timeout_s = period_avg_;
+                timeout_s = next_timeout_;
             }
 
             int timeout_sec = (int)timeout_s;
@@ -269,8 +271,8 @@ public:
                 diag_buf_valid_ = false;
                 last_read_successful_ = false;
                 no_data_out_.write(true);
-                if (read_interval < period_avg_) {
-                    usleep( int((period_avg_ - read_interval)*1000000.0) );
+                if (read_interval < next_timeout_) {
+                    usleep( int((next_timeout_ - read_interval)*1000000.0) );
                 }
             }
             else {
@@ -325,9 +327,10 @@ private:
     std::string param_channel_name_;
 
     bool event_;
+    bool event_no_data_;
     double period_min_;
-    double period_avg_;
-    double period_max_;
+    double next_timeout_;
+    double first_timeout_;
 
     std::string shm_name_;
 
