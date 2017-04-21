@@ -108,8 +108,8 @@ public:
                 return false;
             }
 
-            if (period_min_ >= next_timeout_) {
-                Logger::log() << Logger::Error << "parameter \'period_min\' should be < than \'next_timeout\': " << period_min_ << ", " << next_timeout_ << Logger::endl;
+            if (period_min_ > next_timeout_) {
+                Logger::log() << Logger::Error << "parameter \'period_min\' should be <= than \'next_timeout\': " << period_min_ << ", " << next_timeout_ << Logger::endl;
                 return false;
             }
             if (next_timeout_ >= first_timeout_) {
@@ -308,6 +308,7 @@ public:
             }
             else if (read_status > 0) {
                 diag_buf_valid_ = false;
+                usleep( 1000 );
             }
             else {
                 diag_buf_valid_ = false;
