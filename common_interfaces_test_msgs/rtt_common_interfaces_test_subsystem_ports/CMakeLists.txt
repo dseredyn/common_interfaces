@@ -8,7 +8,7 @@ find_package(catkin REQUIRED COMPONENTS
  common_interfaces_test_msgs
 )
 
-ros_generate_rtt_subsystem_ports(common_interfaces_test_msgs)
+ros_generate_rtt_subsystem_ports(PACKAGE common_interfaces_test_msgs Messages Container)
 
 orocos_generate_package(
   DEPENDS common_interfaces_test_msgs
