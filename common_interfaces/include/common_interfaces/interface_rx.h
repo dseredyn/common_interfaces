@@ -28,6 +28,8 @@
 #ifndef COMMON_INTERFACES_INTERFACE_RX_H__
 #define COMMON_INTERFACES_INTERFACE_RX_H__
 
+#include "common_interfaces/abstract_buffer_converter.h"
+
 #include "shm_comm/shm_channel.h"
 
 #include <vector>
@@ -66,6 +68,7 @@ public:
         addProperty("first_timeout", first_timeout_);
 
         addProperty("channel_name", param_channel_name_);
+        addProperty("converter_name", converter_name_);
     }
 
     // this method in not RT-safe
@@ -88,6 +91,18 @@ public:
 
     bool configureHook() {
         Logger::In in("InterfaceRx::configureHook");
+
+        if (!converter_name_.empty()) {
+            converter_ = common_interfaces::BufferConverterFactory<Container >::Instance()->Create(converter_name_);
+            if (!converter_) {
+                Logger::log() << Logger::Error << "could not find buffer data converter '" << converter_name_ << "'" << Logger::endl;
+                return false;
+            }
+            Logger::log() << Logger::Info << "using data converter '" << converter_name_ << "'" << Logger::endl;
+        }
+        else {
+            Logger::log() << Logger::Info << "no data converter" << Logger::endl;
+        }
 
         if (param_channel_name_.empty()) {
             Logger::log() << Logger::Error << "parameter \'channel_name\' is empty" << Logger::endl;
@@ -164,7 +179,14 @@ public:
         }
 
         if (create_channel) {
-            result = shm_create_channel(shm_name_.c_str(), sizeof(Container), 1, true);
+            size_t data_size;
+            if (converter_) {
+                data_size = converter_->getDataSize();
+            }
+            else {
+                data_size = sizeof(Container);
+            }
+            result = shm_create_channel(shm_name_.c_str(), data_size, 1, true);
             if (result != 0) {
                 Logger::log() << Logger::Error << "create_shm_object: error: " << result << "   errno: " << errno << Logger::endl;
                 return false;
@@ -203,7 +225,7 @@ public:
             return false;
         }
 
-        buf_prev_ = reinterpret_cast<Container*>( pbuf );
+        buf_prev_ = pbuf;
 
         diag_buf_valid_ = false;
         trigger();
@@ -225,7 +247,6 @@ public:
         clock_gettime(CLOCK_REALTIME, &ts);
 
         void *pbuf = NULL;
-        Container *buf = NULL;
 
         if (event_) {
             double timeout_s;
@@ -257,12 +278,19 @@ public:
                 no_data_out_.write(true);
                 // do not wait
             }
-            else if (read_status == 0 && ((buf = reinterpret_cast<Container*>( pbuf )) != buf_prev_)) {
+            else if (read_status == 0 && pbuf != buf_prev_) {
                 diag_buf_valid_ = true;
                 last_read_successful_ = true;
                 // save the pointer of buffer
-                buf_prev_ = buf;
-                port_msg_out_.write(*buf);
+                buf_prev_ = pbuf;
+                if (converter_) {
+                    Container buf;
+                    converter_->convertToMsg(reinterpret_cast<const uint8_t* >(pbuf), buf); 
+                    port_msg_out_.write( buf );
+                }
+                else {
+                    port_msg_out_.write( *reinterpret_cast<Container*>(pbuf) );
+                }
                 if (read_interval < period_min_) {
                     usleep( int((period_min_ - read_interval)*1000000.0) );
                 }
@@ -300,11 +328,18 @@ public:
             if (read_status == SHM_TIMEOUT) {
                 diag_buf_valid_ = false;
             }
-            else if (read_status == 0 && ((buf = reinterpret_cast<Container*>( pbuf )) != buf_prev_)) {
+            else if (read_status == 0 && pbuf != buf_prev_) {
                 diag_buf_valid_ = true;
                 // save the pointer of buffer
-                buf_prev_ = buf;
-                port_msg_out_.write(*buf);
+                buf_prev_ = pbuf;
+                if (converter_) {
+                    Container buf;
+                    converter_->convertToMsg(reinterpret_cast<const uint8_t* >(pbuf), buf); 
+                    port_msg_out_.write( buf );
+                }
+                else {
+                    port_msg_out_.write( *reinterpret_cast<Container*>(pbuf) );
+                }
             }
             else if (read_status > 0) {
                 diag_buf_valid_ = false;
@@ -335,8 +370,10 @@ private:
 
     std::string shm_name_;
 
+    std::string converter_name_;
+
     shm_reader_t* re_;
-    Container *buf_prev_;
+    void *buf_prev_;
     bool last_read_successful_;
 
     RTT::OutputPort<Container > port_msg_out_;
@@ -348,6 +385,8 @@ private:
     RTT::os::TimeService::nsecs last_recv_time_;
 
     ros::Time last_update_time_;
+
+    shared_ptr<common_interfaces::BufferConverter<Container > > converter_;
 };
 
 #endif  // COMMON_INTERFACES_INTERFACE_RX_H__
