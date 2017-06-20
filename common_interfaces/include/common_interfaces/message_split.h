@@ -39,10 +39,9 @@ using namespace RTT;
 template <class Interface >
 class MessageSplit: public RTT::TaskContext {
 public:
-    typedef typename Interface::Container_ Container;
 
     explicit MessageSplit(const std::string& name) :
-        TaskContext(name, PreOperational),
+        TaskContext(name),
         out_(this),
         port_msg_in_("msg_INPORT")
     {
@@ -55,9 +54,6 @@ public:
         std::stringstream ss;
 
         if (diag_buf_valid_) {
-            //std::stringstream ss;
-            //ros::message_operations::Printer<Container >::stream(ss, "", diag_buf_);
-            //return ss.str();
             ss << "time: " << last_ports_time_;
             ss << ", <data ok>";
         }
@@ -65,10 +61,6 @@ public:
             ss << ", <no data>";
         }
         return ss.str();
-    }
-
-    bool configureHook() {
-        return true;
     }
 
     bool startHook() {
@@ -83,7 +75,6 @@ public:
             RTT::os::TimeService::Seconds time2 = RTT::nsecs_to_Seconds(RTT::os::TimeService::Instance()->getNSecs());
             last_ports_time_ = time2 - time1;
 
-//            diag_buf_ = msg_;
             diag_buf_valid_ = true;
         }
         else {
@@ -99,15 +90,12 @@ private:
 
     Interface out_;
 
-    Container msg_;
-    RTT::InputPort<Container > port_msg_in_;
+    typename Interface::Container_ msg_;
+    RTT::InputPort<typename Interface::Container_ > port_msg_in_;
 
-//    Container diag_buf_;
     bool diag_buf_valid_;
 
     RTT::Seconds last_ports_time_;
 };
 
-
 #endif  // COMMON_INTERFACES_MESSAGE_SPLIT_H__
-

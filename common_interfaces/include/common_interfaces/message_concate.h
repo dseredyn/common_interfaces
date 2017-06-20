@@ -39,10 +39,9 @@ using namespace RTT;
 template <class Interface >
 class MessageConcate: public RTT::TaskContext {
 public:
-    typedef typename Interface::Container_ Container;
 
     explicit MessageConcate(const std::string& name) :
-        TaskContext(name, PreOperational),
+        TaskContext(name),
         in_(this),
         port_msg_out_("msg_OUTPORT")
     {
@@ -64,19 +63,12 @@ public:
         ss << "time: " << last_ports_time_;
 
         if (diag_buf_valid_) {
-            //std::stringstream ss;
-            //ros::message_operations::Printer<Container >::stream(ss, "", diag_buf_);
-            //return ss.str();
             ss << ", <data ok>";
         }
         else {
             ss << ", <no obligatory data>";;
         }
         return ss.str();
-    }
-
-    bool configureHook() {
-        return true;
     }
 
     bool startHook() {
@@ -90,7 +82,6 @@ public:
         last_ports_time_ = time2 - time1;
         if (read_successful) {
             port_msg_out_.write(msg_);
-//            diag_buf_ = msg_;
         }
         diag_buf_valid_ = read_successful;
     }
@@ -103,10 +94,9 @@ private:
 
     Interface in_;
 
-    Container msg_;
-    RTT::OutputPort<Container > port_msg_out_;
+    typename Interface::Container_ msg_;
+    RTT::OutputPort<typename Interface::Container_ > port_msg_out_;
 
-//    Container diag_buf_;
     bool diag_buf_valid_;
 
     RTT::Seconds last_ports_time_;

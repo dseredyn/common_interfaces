@@ -235,9 +235,9 @@ public:
         return true;
     }
 
-    void exceptionHook() {
-        recover();
-    }
+//    void exceptionHook() {
+//        recover();
+//    }
 
     void updateHook() {
 
