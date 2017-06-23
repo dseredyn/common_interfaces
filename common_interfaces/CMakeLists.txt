@@ -9,16 +9,17 @@ find_package(catkin REQUIRED COMPONENTS
   rtt_rosclock
   )
 
+catkin_package(
+  INCLUDE_DIRS include
+  DEPENDS rtt_rosclock
+  CATKIN_DEPENDS rtt_ros shm_comm
+)
+
 include_directories(${catkin_INCLUDE_DIRS} include)
 
-#catkin_package(
+#orocos_generate_package(
 #  INCLUDE_DIRS include
-#  CATKIN_DEPENDS rtt_ros shm_comm rtt_rosclock
+#  DEPENDS shm_comm
+#  DEPENDS_TARGETS rtt_ros rtt_rosclock shm_comm
 #)
-
-orocos_generate_package(
-  INCLUDE_DIRS include
-  DEPENDS shm_comm
-  DEPENDS_TARGETS rtt_ros rtt_rosclock
-)
 

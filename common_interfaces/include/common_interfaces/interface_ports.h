@@ -38,7 +38,6 @@
 
 namespace interface_ports {
 
-
 template <typename T >
 class InputPortInterface {
 public:
@@ -132,8 +131,6 @@ public:
         if(it != factoryFunctionRegistry.end())
             instance = it->second(tc, prefix);
 
-        //std::cout << "InputPortInterfaceFactory::Create: " << name << ", " << ((instance!=NULL)?"ok":"failed")<< std::endl;       // debug
-
         // wrap instance in a shared ptr and return
         if(instance != NULL)
             return boost::shared_ptr<InputPortInterface<T > >(instance);
@@ -143,8 +140,6 @@ public:
 
     void RegisterFactoryFunction(string name, InputPortInterface<T >* (*classFactoryFunction)(RTT::TaskContext *tc, const std::string& prefix) )
     {
-        //std::cout << "InputPortInterfaceFactory::RegisterFactoryFunction: " << name << std::endl;     // debug
-
         // register the class factory function
         factoryFunctionRegistry[name] = classFactoryFunction;
     }
@@ -166,6 +161,7 @@ class InputPortInterfaceRegistrar {
 public:
     InputPortInterfaceRegistrar(const std::string& name)
     {
+        std::cout << "registering InputPortInterface: " << name << std::endl;  // debug
         // register the class factory function 
         InputPortInterfaceFactory<typename T::Container_ >::Instance()->RegisterFactoryFunction(name, InputPortInterfaceFactoryFunction<T >);
     }
@@ -189,8 +185,6 @@ public:
         if(it != factoryFunctionRegistry.end())
             instance = it->second(tc, prefix);
 
-        //std::cout << "OutputPortInterfaceFactory::Create: " << name << ", " << ((instance!=NULL)?"ok":"failed")<< std::endl;      // debug
-
         // wrap instance in a shared ptr and return
         if(instance != NULL)
             return boost::shared_ptr<OutputPortInterface<T > >(instance);
@@ -200,8 +194,6 @@ public:
 
     void RegisterFactoryFunction(string name, OutputPortInterface<T >* (*classFactoryFunction)(RTT::TaskContext *tc, const std::string& prefix) )
     {
-        //std::cout << "OutputPortInterfaceFactory::RegisterFactoryFunction: " << name << std::endl;    // debug
-
         // register the class factory function
         factoryFunctionRegistry[name] = classFactoryFunction;
     }
@@ -223,6 +215,7 @@ class OutputPortInterfaceRegistrar {
 public:
     OutputPortInterfaceRegistrar(const std::string& name)
     {
+        std::cout << "registering OutputPortInterface: " << name << std::endl;  // debug
         // register the class factory function 
         OutputPortInterfaceFactory<typename T::Container_ >::Instance()->RegisterFactoryFunction(name, OutputPortInterfaceFactoryFunction<T >);
     }
