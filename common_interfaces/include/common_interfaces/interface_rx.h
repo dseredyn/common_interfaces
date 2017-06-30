@@ -114,6 +114,8 @@ public:
                 Logger::log() << Logger::Error << "parameter \'period_min\' is not set (0.0)" << Logger::endl;
                 return false;
             }
+        }
+        if (event_no_data_) {
             if (next_timeout_ == 0.0) {
                 Logger::log() << Logger::Error << "parameter \'next_timeout\' is not set (0.0)" << Logger::endl;
                 return false;
@@ -135,6 +137,7 @@ public:
 
         Logger::log() << Logger::Info << "parameter channel_name is set to: \'" << param_channel_name_ << "\'" << Logger::endl;
         Logger::log() << Logger::Info << "parameter event is set to: \'" << (event_?"true":"false") << Logger::endl;
+        Logger::log() << Logger::Info << "parameter event_no_data is set to: \'" << (event_no_data_?"true":"false") << Logger::endl;
         Logger::log() << Logger::Info << "parameter \'period_min\' is set to: " << period_min_ << Logger::endl;
         Logger::log() << Logger::Info << "parameter \'next_timeout\' is set to: " << next_timeout_ << Logger::endl;
         Logger::log() << Logger::Info << "parameter \'first_timeout\' is set to: " << first_timeout_ << Logger::endl;
@@ -248,7 +251,7 @@ public:
 
         void *pbuf = NULL;
 
-        if (event_) {
+        if (event_no_data_) {
             double timeout_s;
             if (last_read_successful_) {
                 timeout_s = first_timeout_;
@@ -275,6 +278,7 @@ public:
             if (read_status == SHM_TIMEOUT) {
                 diag_buf_valid_ = false;
                 last_read_successful_ = false;
+//Logger::log() << Logger::Error << getName() << " timeout" << Logger::endl;
                 no_data_out_.write(true);
                 // do not wait
             }
@@ -282,6 +286,7 @@ public:
                 diag_buf_valid_ = true;
                 last_read_successful_ = true;
                 // save the pointer of buffer
+//Logger::log() << Logger::Error << getName() << " read" << Logger::endl;
                 buf_prev_ = pbuf;
                 if (converter_) {
                     Container buf;
@@ -298,6 +303,7 @@ public:
             else if (read_status > 0) {
                 diag_buf_valid_ = false;
                 last_read_successful_ = false;
+//Logger::log() << Logger::Error << getName() << " other error" << Logger::endl;
                 no_data_out_.write(true);
                 if (read_interval < next_timeout_) {
                     usleep( int((next_timeout_ - read_interval)*1000000.0) );
@@ -327,10 +333,12 @@ public:
 
             if (read_status == SHM_TIMEOUT) {
                 diag_buf_valid_ = false;
+//Logger::log() << Logger::Error << getName() << " timeout" << Logger::endl;
             }
             else if (read_status == 0 && pbuf != buf_prev_) {
                 diag_buf_valid_ = true;
                 // save the pointer of buffer
+//Logger::log() << Logger::Error << getName() << " read" << Logger::endl;
                 buf_prev_ = pbuf;
                 if (converter_) {
                     Container buf;
@@ -340,9 +348,13 @@ public:
                 else {
                     port_msg_out_.write( *reinterpret_cast<Container*>(pbuf) );
                 }
+//                if (read_interval < period_min_) {
+//                    usleep( int((period_min_ - read_interval)*1000000.0) );
+//                }
             }
             else if (read_status > 0) {
                 diag_buf_valid_ = false;
+//Logger::log() << Logger::Error << getName() << " other error" << Logger::endl;
                 usleep( 1000 );
             }
             else {

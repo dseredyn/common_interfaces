@@ -34,25 +34,11 @@
 
 #include <boost/shared_ptr.hpp>
 
-#include "rtt/RTT.hpp"
+#include <rtt/RTT.hpp>
+
+#include <common_interfaces/interface_ports_fwd.h>
 
 namespace interface_ports {
-
-template <typename T >
-class InputPortInterface {
-public:
-    virtual bool read(T &data) = 0;
-
-    virtual bool removeUnconnectedPorts() = 0;
-};
-
-template <typename T >
-class OutputPortInterface {
-public:
-    virtual bool write(const T &data) = 0;
-
-    virtual bool removeUnconnectedPorts() = 0;
-};
 
 template <typename T >
 class InputPort : public InputPortInterface<T > {
